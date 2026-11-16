@@ -392,7 +392,7 @@ export function RunnerGame() {
                     setRanks(rows);
                     setShareNote("전체 순위에 남겼습니다");
                   })
-                  .catch(() => setShareNote("지금은 이 기기에만 남겼습니다"));
+                  .catch(() => setShareNote("서버에 연결되지 않아 이 기기에만 남겼습니다"));
               }}
             >
               <input
