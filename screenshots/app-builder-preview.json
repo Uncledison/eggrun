@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "루멘런",
+      "hasCanvas": true,
+      "bodyTextLen": 148,
+      "bodyTextHash": "e3c9371cfe40cfbeb185fb5650b8591f82ed0fd4d78c3c5451c2085d0d02a444",
+      "bodyTextPrefix": "점수 0 거리 0m 콤보 0 최고 0 ×1.00 ENDLESS ROOFTOP 루멘런 상자는 점프, 머리 위 표지판은",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "루멘런",
+      "hasCanvas": true,
+      "bodyTextLen": 148,
+      "bodyTextHash": "36f2a45fe973788f9f16cab0ff61295cfb76c9593286bcc8ba740cfad9a8ebfe",
+      "bodyTextPrefix": "점수 0 거리 0m 콤보 0 최고 0 ×0.50 ENDLESS ROOFTOP 루멘런 상자는 점프, 머리 위 표지판은",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}
