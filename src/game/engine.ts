@@ -175,6 +175,7 @@ export class Runner {
   private flightT = 0;
   private flightTarget = 220;
   private flightVy = 0;
+  private dayTold = false;
   private drops = Array.from({ length: 80 }, () => ({
     x: Math.random(),
     y: Math.random(),
@@ -354,6 +355,7 @@ export class Runner {
     this.flying = false;
     this.flightT = 0;
     this.flightVy = 0;
+    this.dayTold = false;
     this.tintTier = 0;
     this.tintR = BODY_TIERS[0].rgb[0];
     this.tintG = BODY_TIERS[0].rgb[1];
@@ -1061,6 +1063,11 @@ export class Runner {
     return this.difficulty();
   }
 
+  private daylight(): number {
+    if (this.mode !== "run") return 0;
+    return clamp((this.distance - 460) / 520, 0, 1);
+  }
+
   private seedStreaks(): void {
     this.streaks.forEach((s, i) => {
       s.x = this.scroll + Math.random() * this.view.w;
@@ -1171,6 +1178,10 @@ export class Runner {
       const name = kind === "wind" ? "바람" : kind === "rain" ? "비" : kind === "snow" ? "눈" : "";
       if (name) this.floater(name, this.view.w * 0.62, 96, "#f6f1e7");
     }
+    if (!this.dayTold && this.daylight() > 0.35) {
+      this.dayTold = true;
+      this.floater("낮", this.view.w * 0.42, 88, "#ffe1a8");
+    }
     if (kind === "clear") return;
     const fall = kind === "rain" ? 0.55 : kind === "snow" ? 0.08 : 0;
     const blow = kind === "wind" ? 0.55 : kind === "rain" ? 0.12 : 0.04;
@@ -1255,20 +1266,21 @@ export class Runner {
 
   private drawSky(ctx: CanvasRenderingContext2D): void {
     const t = this.night();
+    const day = this.daylight();
     const { w, h } = this.view;
     const g = ctx.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, mix("#1b3054", "#070a14", t));
-    g.addColorStop(0.45, mix("#3e628c", "#141c33", t));
-    g.addColorStop(0.72, mix("#e08a62", "#3a2744", t));
-    g.addColorStop(1, mix("#f3c48a", "#6e4458", t));
+    g.addColorStop(0, mix(mix("#1b3054", "#070a14", t), "#79c8ff", day));
+    g.addColorStop(0.45, mix(mix("#3e628c", "#141c33", t), "#d7f1ff", day));
+    g.addColorStop(0.72, mix(mix("#e08a62", "#3a2744", t), "#ffe3b0", day));
+    g.addColorStop(1, mix(mix("#f3c48a", "#6e4458", t), "#fff6d8", day));
     ctx.fillStyle = g;
     ctx.fillRect(-30, -30, w + 60, h + 60);
-    if (t > 0.25) {
+    if (t > 0.25 && day < 0.8) {
       const stars = 28;
       for (let i = 0; i < stars; i++) {
         const n = hash(i + 42);
         const n2 = hash(i + 90);
-        const alpha = (t - 0.25) * (0.3 + (n2 % 1) * 0.7);
+        const alpha = (t - 0.25) * (1 - day) * (0.3 + (n2 % 1) * 0.7);
         ctx.fillStyle = `rgba(246,241,231,${alpha})`;
         ctx.fillRect((n * w) % w, (n2 * this.view.ground * 0.7) % (this.view.ground * 0.65), 1.6, 1.6);
       }
@@ -1277,22 +1289,45 @@ export class Runner {
 
   private drawCelestial(ctx: CanvasRenderingContext2D): void {
     const t = this.night();
+    const day = this.daylight();
     const { w, ground } = this.view;
-    const x = lerp(w * 0.72, w * 0.28, t);
-    const y = lerp(ground * 0.38, ground * 0.22, t);
-    const r = lerp(36, 18, t);
-    ctx.beginPath();
-    ctx.fillStyle = mix("#ffe1a8", "#f6f1e7", t);
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.fillStyle = mix("rgba(255,210,150,0.25)", "rgba(180,200,255,0.18)", t);
-    ctx.arc(x, y, r * 2.3, 0, Math.PI * 2);
-    ctx.fill();
+    if (day < 0.98) {
+      const x = lerp(w * 0.72, w * 0.28, t);
+      const y = lerp(ground * 0.38, ground * 0.22, t);
+      const r = lerp(36, 18, t);
+      ctx.save();
+      ctx.globalAlpha = 1 - day;
+      ctx.beginPath();
+      ctx.fillStyle = mix("#ffe1a8", "#f6f1e7", t);
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = mix("rgba(255,210,150,0.25)", "rgba(180,200,255,0.18)", t);
+      ctx.arc(x, y, r * 2.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    if (day > 0.02) {
+      const x = lerp(w * 0.18, w * 0.7, day);
+      const y = lerp(ground * 0.92, ground * 0.2, day);
+      const r = lerp(18, 34, day);
+      ctx.save();
+      ctx.globalAlpha = clamp(day * 1.3, 0, 1);
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(255,196,64,0.28)";
+      ctx.arc(x, y, r * 2.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = "#ffe56a";
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   private drawBuildings(ctx: CanvasRenderingContext2D, parallax: number, far: boolean): void {
     const t = this.night();
+    const day = this.daylight();
     const span = far ? 86 : 108;
     const lead = this.scroll * parallax;
     const i0 = Math.floor(lead / span) - 1;
@@ -1306,7 +1341,11 @@ export class Runner {
       const bw = span * (0.62 + n * 0.34);
       const bh = (far ? 46 : 70) + n2 * (far ? 110 : 190);
       const x = i * span - lead;
-      const body = far ? mix("#24344c", "#121826", t) : mix("#1b2838", "#0d121b", t);
+      const body = mix(
+        far ? mix("#24344c", "#121826", t) : mix("#1b2838", "#0d121b", t),
+        far ? "#6d8eae" : "#4d6d8c",
+        day,
+      );
       ctx.fillStyle = body;
       ctx.fillRect(x, base - bh, bw, bh + 8);
       if (!far && n3 > 0.42) {
@@ -1482,6 +1521,25 @@ export class Runner {
     ctx.rotate(falling ? spin * 2.1 : clamp(this.flying ? -this.flightVy / 700 : 0, -0.65, 0.45));
     ctx.scale(sx, sy);
     ctx.translate(0, -R);
+
+    if (this.flying && !falling) {
+      const flap = Math.sin(this.time * 16);
+      const flap2 = Math.sin(this.time * 16 + 0.8);
+      ctx.beginPath();
+      ctx.moveTo(-6, -8);
+      ctx.quadraticCurveTo(-34 + flap * 8, 6, -62 + flap2 * 16, 28 + flap * 6);
+      ctx.quadraticCurveTo(-70 + flap * 10, 48, -40 + flap2 * 12, 58);
+      ctx.quadraticCurveTo(-18 + flap * 4, 36, -4, 14);
+      ctx.closePath();
+      ctx.fillStyle = "#d7262d";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-8, -4);
+      ctx.quadraticCurveTo(-30 + flap2 * 6, 14, -48 + flap * 12, 40);
+      ctx.strokeStyle = "#ff5a45";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
 
     ctx.fillStyle = this.flash > 0.45 && this.mode !== "menu" ? "#ffffff" : this.bodyFill();
     ctx.beginPath();
