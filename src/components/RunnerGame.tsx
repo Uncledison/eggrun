@@ -48,7 +48,9 @@ export function RunnerGame() {
   const multRef = useRef<HTMLSpanElement>(null);
   const barRef = useRef<HTMLSpanElement>(null);
   const [hud, setHud] = useState<Hud>(initialHud);
+  const [coach, setCoach] = useState(false);
   const hudRef = useRef(hud);
+  const modeRef = useRef(hud.mode);
   hudRef.current = hud;
 
   useEffect(() => {
@@ -143,6 +145,15 @@ export function RunnerGame() {
     };
   }, []);
 
+  useEffect(() => {
+    const prev = modeRef.current;
+    modeRef.current = hud.mode;
+    if (hud.mode !== "run" || (prev !== "menu" && prev !== "over")) return;
+    setCoach(true);
+    const timer = window.setTimeout(() => setCoach(false), 3800);
+    return () => window.clearTimeout(timer);
+  }, [hud.mode]);
+
   const playing = hud.mode === "run" || hud.mode === "hitstop" || hud.mode === "tumble";
 
   return (
@@ -221,6 +232,11 @@ export function RunnerGame() {
           </section>
         </div>
       ) : null}
+      {coach && hud.mode === "run" ? (
+        <p className="pointer-events-none absolute top-24 left-1/2 z-10 w-[min(92vw,20rem)] -translate-x-1/2 rounded-full bg-surface/95 px-4 py-2 text-center text-sm font-semibold text-fg shadow-lg">
+          점프를 연타하면 세 번까지 뜁니다
+        </p>
+      ) : null}
       {hud.newBest && playing ? (
         <p className="pointer-events-none absolute top-24 left-4 z-10 text-sm font-semibold text-gold">최고 기록 경신 중</p>
       ) : null}
@@ -237,7 +253,7 @@ export function RunnerGame() {
               <div className="rounded-xl bg-bg px-2 py-3">
                 <ArrowUp className="mx-auto size-4 text-primary" aria-hidden="true" />
                 <dt className="mt-1 text-sm font-semibold text-fg">점프</dt>
-                <dd className="text-xs text-muted">연속 3회</dd>
+                <dd className="text-xs text-muted">연타하면 3번</dd>
               </div>
               <div className="rounded-xl bg-bg px-2 py-3">
                 <ArrowDown className="mx-auto size-4 text-gold" aria-hidden="true" />
