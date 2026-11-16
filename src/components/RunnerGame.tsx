@@ -13,6 +13,7 @@ type Hud = {
   muted: boolean;
   reason: DeathReason;
   pace: Pace;
+  shields: number;
 };
 
 const initialHud: Hud = {
@@ -26,6 +27,7 @@ const initialHud: Hud = {
   muted: false,
   reason: "",
   pace: "mid",
+  shields: 0,
 };
 
 function fmt(n: number): string {
@@ -76,6 +78,7 @@ export function RunnerGame() {
         prev.peakCombo === s.peakCombo &&
         prev.reason === s.reason &&
         prev.pace === s.pace &&
+        prev.shields === s.shields &&
         prev.score === score &&
         prev.distance === distance
       ) {
@@ -92,6 +95,7 @@ export function RunnerGame() {
         muted: s.muted,
         reason: s.reason,
         pace: s.pace,
+        shields: s.shields,
       };
       hudRef.current = next;
       setHud(next);
@@ -168,6 +172,7 @@ export function RunnerGame() {
           </p>
           <p className="mt-1 text-sm text-muted">
             거리 <span ref={distRef}>0m</span>
+            {hud.shields > 0 ? <span className="ml-2 font-semibold text-accent">방어 {hud.shields}</span> : null}
           </p>
         </div>
 
@@ -247,7 +252,7 @@ export function RunnerGame() {
             <p className="text-xs font-semibold tracking-widest text-primary">ENDLESS ROOFTOP</p>
             <h1 className="font-display mt-1 text-5xl leading-none text-fg">에그런</h1>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              상자는 점프, 머리 위 표지판은 슬라이드, 끊긴 지붕은 점프. 연속으로 세 번까지 뛸 수 있고, 멈추려면 아래 멈춤입니다.
+              상자는 점프, 머리 위 표지판은 슬라이드. 1000점마다 방어막이 생기고, 한 번 부딪히면 사라집니다.
             </p>
             <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl bg-bg px-2 py-3">

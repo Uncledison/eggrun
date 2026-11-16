@@ -22,6 +22,7 @@ export type Snapshot = {
   sliding: boolean;
   reason: DeathReason;
   pace: Pace;
+  shields: number;
 };
 
 declare global {
@@ -164,6 +165,16 @@ export class Runner {
   private jumpBuffer = 0;
   private queued = 0;
   private airLeft = 3;
+  private shields = 0;
+  private shieldsGiven = 0;
+  private invuln = 0;
+  private lastWeather: "clear" | "wind" | "rain" | "snow" = "clear";
+  private drops = Array.from({ length: 80 }, () => ({
+    x: Math.random(),
+    y: Math.random(),
+    v: 0.45 + Math.random() * 0.7,
+    s: 0.4 + Math.random(),
+  }));
   private lastJumpAt = 0;
   private tintR = 244;
   private tintG = 239;
@@ -293,6 +304,10 @@ export class Runner {
     this.jumpBuffer = 0;
     this.queued = 0;
     this.airLeft = 3;
+    this.shields = 0;
+    this.shieldsGiven = 0;
+    this.invuln = 0;
+    this.lastWeather = "clear";
     this.tintTier = 0;
     this.tintR = BODY_TIERS[0].rgb[0];
     this.tintG = BODY_TIERS[0].rgb[1];
@@ -458,6 +473,7 @@ export class Runner {
     this.jumpBuffer = Math.max(0, this.jumpBuffer - h);
     if (this.queued > 0) this.jumpBuffer = BUFFER;
     this.slideLock = Math.max(0, this.slideLock - h);
+    this.invuln = Math.max(0, this.invuln - h);
     if (this.slideT > 0) this.slideT = Math.max(0, this.slideT - h);
     if (!this.grounded) this.coyote = Math.max(0, this.coyote - h);
     if (this.chain > 0) {
@@ -504,8 +520,13 @@ export class Runner {
       this.grounded = false;
       if (wasGround && this.feet <= 2) this.coyote = COYOTE;
       if (!supported && this.feet < -24 && this.vy < 0) {
-        this.die("pit");
-        return;
+        if (this.invuln > 0) {
+          this.feet = 20;
+          this.vy = 360;
+        } else {
+          this.die("pit");
+          return;
+        }
       }
     }
 
@@ -543,6 +564,8 @@ export class Runner {
     }
     this.saveTimer -= h;
     if (this.dirty && this.saveTimer <= 0) this.persist(false);
+    this.refreshShields();
+    this.updateWeather(h);
     this.refreshTint(h);
   }
 
@@ -639,6 +662,7 @@ export class Runner {
   }
 
   private collide(h: number): void {
+    if (this.invuln > 0) return;
     const prevScroll = this.scroll - this.speed * h;
     const hb = this.hurt();
     const pL = this.px - hb.halfW;
@@ -673,7 +697,29 @@ export class Runner {
   }
 
   private die(reason: DeathReason): void {
-    if (this.mode !== "run") return;
+    if (this.mode !== "run" || this.invuln > 0) return;
+    if (this.shields > 0) {
+      this.shields -= 1;
+      this.invuln = 0.95;
+      this.flash = 0.5;
+      this.trauma = Math.min(1, this.trauma + 0.35);
+      this.floater("방어", this.px, this.view.ground - this.feet - 96, "#7ee0c0");
+      this.puff(16, "#7ee0c0", 0.75);
+      sfx.near();
+      if (reason === "pit") {
+        this.feet = 56;
+        this.vy = 720;
+        this.grounded = false;
+      } else if (reason === "beam") {
+        this.slideT = Math.max(this.slideT, 0.4);
+        this.vy = Math.min(this.vy, -200);
+      } else {
+        this.vy = Math.max(this.vy, 680);
+        this.feet += 24;
+        this.grounded = false;
+      }
+      return;
+    }
     this.mode = "hitstop";
     this.hitTimer = this.reduced ? 0.04 : 0.08;
     this.reason = reason;
@@ -1006,6 +1052,7 @@ export class Runner {
       sliding: this.slideT > 0 || this.slideBlend > 0.5,
       reason: this.reason,
       pace: this.pace,
+      shields: this.shields,
     };
   }
 
@@ -1013,6 +1060,78 @@ export class Runner {
     const snap = this.snapshot();
     if (typeof window !== "undefined") window.__lumen = snap;
     this.onFrame(snap);
+  }
+
+  private refreshShields(): void {
+    const earned = Math.min(3, Math.floor(this.score / 1000));
+    while (this.shieldsGiven < earned) {
+      this.shieldsGiven += 1;
+      this.shields += 1;
+      this.floater("방어막", this.px, this.view.ground - this.feet - 124, "#7ee0c0");
+      this.puff(12, "#7ee0c0", 0.55);
+    }
+  }
+
+  private weatherKind(): "clear" | "wind" | "rain" | "snow" {
+    if (this.mode !== "run" || this.distance < 180) return "clear";
+    const phase = Math.floor((this.distance - 180) / 280) % 3;
+    if (phase === 0) return "wind";
+    if (phase === 1) return "rain";
+    return "snow";
+  }
+
+  private updateWeather(h: number): void {
+    const kind = this.weatherKind();
+    if (kind !== this.lastWeather) {
+      this.lastWeather = kind;
+      const name = kind === "wind" ? "바람" : kind === "rain" ? "비" : kind === "snow" ? "눈" : "";
+      if (name) this.floater(name, this.view.w * 0.62, 96, "#f6f1e7");
+    }
+    if (kind === "clear") return;
+    const fall = kind === "rain" ? 0.55 : kind === "snow" ? 0.08 : 0;
+    const blow = kind === "wind" ? 0.55 : kind === "rain" ? 0.12 : 0.04;
+    for (const d of this.drops) {
+      d.x += h * blow * d.v;
+      d.y += h * fall * d.v;
+      if (d.x > 1.3) d.x -= 1.5;
+      if (d.y > 1.08) {
+        d.y = -0.05;
+        d.x = Math.random();
+      }
+    }
+  }
+
+  private drawWeather(ctx: CanvasRenderingContext2D): void {
+    const kind = this.weatherKind();
+    if (kind === "clear" || this.reduced) return;
+    const { w, h } = this.view;
+    ctx.save();
+    for (const d of this.drops) {
+      const x = (((d.x % 1) + 1) % 1) * w;
+      const y = (((d.y % 1) + 1) % 1) * h;
+      ctx.globalAlpha = 0.28 + d.s * 0.35;
+      if (kind === "wind") {
+        ctx.strokeStyle = "rgba(246,241,231,0.8)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, y * 0.78);
+        ctx.lineTo(x + 24 + d.s * 36, y * 0.78 + 1);
+        ctx.stroke();
+      } else if (kind === "rain") {
+        ctx.strokeStyle = "rgba(186,214,255,0.9)";
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 8, y + 16 + d.s * 12);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = "#f7f4ee";
+        ctx.beginPath();
+        ctx.arc(x, y, 1.5 + d.s * 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
   }
 
   private draw(): void {
@@ -1035,6 +1154,7 @@ export class Runner {
     this.drawSparks(ctx);
     this.drawParticles(ctx, false);
     this.drawPlayer(ctx);
+    this.drawWeather(ctx);
     this.drawParticles(ctx, true);
     this.drawStreaks(ctx);
     this.drawFloaters(ctx);
@@ -1283,6 +1403,16 @@ export class Runner {
     ctx.beginPath();
     ctx.arc(0, 0, R, 0, Math.PI * 2);
     ctx.fill();
+
+    if (this.shields > 0 && !falling) {
+      for (let i = 0; i < this.shields; i++) {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(126,224,192,${0.45 + Math.sin(this.time * 6 + i) * 0.15})`;
+        ctx.lineWidth = 2.4;
+        ctx.arc(0, 0, R + 8 + i * 5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
 
     const cycle = this.time % 3.1;
     const blink = !falling && ((cycle > 2.42 && cycle < 2.56) || (cycle > 2.7 && cycle < 2.84));
