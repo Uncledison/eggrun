@@ -300,11 +300,11 @@ export function RunnerGame() {
 
       {hud.mode === "menu" ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-start justify-center p-4 sm:items-center sm:justify-end sm:p-10">
-          <section className="panel-in pointer-events-auto w-full max-w-md rounded-2xl border border-border bg-surface/95 p-6 shadow-2xl backdrop-blur-md">
+          <section className="panel-in pointer-events-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-surface/95 p-6 shadow-2xl backdrop-blur-md">
             <p className="text-xs font-semibold tracking-widest text-primary">ENDLESS ROOFTOP</p>
             <h1 className="font-display mt-1 text-5xl leading-none text-fg">에그런</h1>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              상자는 점프, 머리 위 표지판은 슬라이드. 번개를 먹으면 3초 비행. 보호막은 5000점마다 하나.
+              상자는 점프, 머리 위 표지판은 슬라이드. 번개를 먹으면 3초 비행. 보호막은 2만 점마다 하나.
             </p>
             <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl bg-bg px-2 py-3">
@@ -326,6 +326,23 @@ export function RunnerGame() {
             <p className="mt-4 text-sm text-muted">
               최고 기록 <span className="font-semibold text-gold">{fmt(hud.best)}</span>
             </p>
+            <div className="mt-3">
+              <p className="text-xs font-semibold text-muted">전체 순위</p>
+              {ranks.length > 0 ? (
+                <ol className="mt-1 space-y-1">
+                  {ranks.slice(0, 5).map((row, i) => (
+                    <li key={row.name} className="flex items-center justify-between text-sm">
+                      <span className="text-muted">
+                        {i + 1}. {row.name}
+                      </span>
+                      <span className="font-semibold text-fg">{fmt(row.score)}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="mt-1 text-sm text-muted">아직 기록이 없습니다</p>
+              )}
+            </div>
             <div className="mt-4 grid grid-cols-3 gap-2" role="group" aria-label="시작 속도">
               {(
                 [

@@ -1191,7 +1191,7 @@ export class Runner {
   }
 
   private refreshShields(): void {
-    const tier = Math.floor(this.score / 5000);
+    const tier = Math.floor(this.score / 20000);
     if (tier < 1 || tier <= this.shieldsGiven) return;
     const grant = this.shields < 1;
     this.shieldsGiven = tier;
