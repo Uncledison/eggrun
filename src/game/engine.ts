@@ -40,8 +40,8 @@ const COYOTE = 0.11;
 const BUFFER = 0.13;
 const SLIDE_DUR = 0.56;
 const SLIDE_LOCK = 0.08;
-const PACE_SPEED: Record<Pace, number> = { slow: 340, mid: 460, fast: 620 };
-const MAX_SPEED = 900;
+const PACE_SPEED: Record<Pace, number> = { slow: 460, mid: 620, fast: 780 };
+const MAX_SPEED = 1060;
 const RAMP = 23;
 const CHAIN = 2.7;
 

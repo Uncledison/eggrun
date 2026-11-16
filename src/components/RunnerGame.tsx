@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { loadLastName, loadRanks, recordRank, shareScore, type RankEntry } from "@/game/ranks";
+import { listRanks, submitRank, type BoardRow } from "@/game/board";
+import { loadLastName, recordRank, shareScore } from "@/game/ranks";
 import { ArrowDown, ArrowUp, Pause, RotateCcw, Trophy, Volume2, VolumeX, Zap } from "lucide-react";
 import { Runner, type DeathReason, type Mode, type Pace, type Snapshot } from "@/game/engine";
 
@@ -58,7 +59,7 @@ export function RunnerGame() {
   const barRef = useRef<HTMLSpanElement>(null);
   const [hud, setHud] = useState<Hud>(initialHud);
   const [coach, setCoach] = useState(false);
-  const [ranks, setRanks] = useState<RankEntry[]>([]);
+  const [ranks, setRanks] = useState<BoardRow[]>([]);
   const [runnerName, setRunnerName] = useState("");
   const [shareNote, setShareNote] = useState("");
   const hudRef = useRef(hud);
@@ -189,9 +190,11 @@ export function RunnerGame() {
   }, [hud.mode]);
 
   useEffect(() => {
-    setRanks(loadRanks());
     setRunnerName(loadLastName());
-  }, []);
+    void listRanks()
+      .then((rows) => setRanks(rows))
+      .catch(() => undefined);
+  }, [hud.mode]);
 
   useEffect(() => {
     if (hud.mode === "over") setShareNote("");
@@ -382,9 +385,14 @@ export function RunnerGame() {
               className="mt-4 flex gap-2"
               onSubmit={(e) => {
                 e.preventDefault();
-                setRanks(recordRank(runnerName, hud.score));
+                recordRank(runnerName, hud.score);
                 setRunnerName(loadLastName());
-                setShareNote("이 기기의 순위에 남겼습니다");
+                void submitRank({ data: { name: runnerName, score: hud.score } })
+                  .then((rows) => {
+                    setRanks(rows);
+                    setShareNote("전체 순위에 남겼습니다");
+                  })
+                  .catch(() => setShareNote("지금은 이 기기에만 남겼습니다"));
               }}
             >
               <input
@@ -401,8 +409,9 @@ export function RunnerGame() {
             </form>
             {ranks.length > 0 ? (
               <ol className="mt-3 space-y-1">
+                <li className="text-xs font-semibold text-muted">전체 순위</li>
                 {ranks.slice(0, 5).map((row, i) => (
-                  <li key={`${row.name}-${row.at}`} className="flex items-center justify-between text-sm">
+                  <li key={row.name} className="flex items-center justify-between text-sm">
                     <span className="text-muted">
                       {i + 1}. {row.name}
                     </span>
