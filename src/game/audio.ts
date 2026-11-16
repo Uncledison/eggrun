@@ -157,6 +157,10 @@ export const sfx = {
     const f = 640 + Math.min(combo, 16) * 26;
     tone(f, 0.08, "sine", 0.055, f * 1.45);
   },
+  coin() {
+    tone(1568, 0.07, "sine", 0.08, 2093);
+    chirp(0.06, 2093, 2637);
+  },
   clear(combo: number) {
     tone(400 + Math.min(combo, 24) * 16, 0.06, "triangle", 0.04);
   },

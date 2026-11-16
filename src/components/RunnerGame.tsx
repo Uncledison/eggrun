@@ -326,16 +326,16 @@ export function RunnerGame() {
             <p className="mt-4 text-sm text-muted">
               최고 기록 <span className="font-semibold text-gold">{fmt(hud.best)}</span>
             </p>
-            <div className="mt-3">
-              <p className="text-xs font-semibold text-muted">전체 순위</p>
+            <div className="mt-3 rounded-xl border border-gold/40 bg-gold/15 px-3 py-3">
+              <p className="text-sm font-semibold tracking-wide text-gold">전체 순위</p>
               {ranks.length > 0 ? (
-                <ol className="mt-1 space-y-1">
+                <ol className="mt-2 space-y-1.5">
                   {ranks.slice(0, 5).map((row, i) => (
                     <li key={row.name} className="flex items-center justify-between text-sm">
-                      <span className="text-muted">
+                      <span className={i === 0 ? "text-base font-bold text-gold" : "font-medium text-fg"}>
                         {i + 1}. {row.name}
                       </span>
-                      <span className="font-semibold text-fg">{fmt(row.score)}</span>
+                      <span className={i === 0 ? "text-base font-bold text-gold" : "font-semibold text-fg"}>{fmt(row.score)}</span>
                     </li>
                   ))}
                 </ol>

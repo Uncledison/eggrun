@@ -67,6 +67,7 @@ type Obs = {
 };
 
 type Spark = { alive: boolean; x: number; y: number; phase: number; wing: boolean };
+type Coin = { alive: boolean; x: number; y: number; phase: number };
 type Particle = {
   alive: boolean;
   x: number;
@@ -117,6 +118,9 @@ function makeObs(): Obs {
 }
 function makeSpark(): Spark {
   return { alive: false, x: 0, y: 0, phase: 0, wing: false };
+}
+function makeCoin(): Coin {
+  return { alive: false, x: 0, y: 0, phase: 0 };
 }
 function makeParticle(): Particle {
   return { alive: false, x: 0, y: 0, vx: 0, vy: 0, g: 0, life: 0, max: 1, size: 3, color: "#fff", front: false };
@@ -212,6 +216,10 @@ export class Runner {
 
   private obstacles: Obs[] = Array.from({ length: 18 }, makeObs);
   private sparks: Spark[] = Array.from({ length: 28 }, makeSpark);
+  private coins: Coin[] = Array.from({ length: 40 }, makeCoin);
+  private nextCoinX = 1400;
+  private coinChain = 0;
+  private coinChainT = 0;
   private particles: Particle[] = Array.from({ length: 160 }, makeParticle);
   private floaters: Floater[] = Array.from({ length: 10 }, makeFloater);
   private streaks: Streak[] = Array.from({ length: 16 }, () => ({ x: 0, y: 0, len: 40 }));
@@ -402,6 +410,10 @@ export class Runner {
     this.beatAcc = 0;
     for (const o of this.obstacles) o.alive = false;
     for (const s of this.sparks) s.alive = false;
+    for (const c of this.coins) c.alive = false;
+    this.nextCoinX = this.scroll + this.view.w;
+    this.coinChain = 0;
+    this.coinChainT = 0;
     for (const f of this.floaters) f.alive = false;
     this.lastKind = "";
     this.nextX = this.scroll + this.view.w * 0.98;
@@ -441,6 +453,10 @@ export class Runner {
     this.flash = 0;
     for (const o of this.obstacles) o.alive = false;
     for (const s of this.sparks) s.alive = false;
+    for (const c of this.coins) c.alive = false;
+    this.nextCoinX = this.scroll + this.view.w;
+    this.coinChain = 0;
+    this.coinChainT = 0;
     this.lastKind = "";
     this.nextX = this.scroll + this.view.w * 0.98;
     this.emit();
@@ -666,6 +682,8 @@ export class Runner {
     this.collide(h);
     if (this.mode !== "run") return;
     this.collectSparks();
+    this.spawnCoins(h);
+    this.collectCoins();
     this.scorePasses();
     this.spawnIfNeeded();
     this.recycle();
@@ -988,6 +1006,45 @@ export class Runner {
     }
   }
 
+  private spawnCoins(h: number): void {
+    this.coinChainT = Math.max(0, this.coinChainT - h);
+    if (this.coinChainT <= 0) this.coinChain = 0;
+    const horizon = this.scroll + this.view.w + 80;
+    const sky = Math.max(210, this.view.h * 0.46);
+    while (this.nextCoinX < horizon) {
+      const c = this.alloc(this.coins, makeCoin);
+      c.alive = true;
+      c.x = this.nextCoinX;
+      c.y = this.flying ? clamp(this.flightTarget, 120, this.view.h * 0.62) : sky;
+      c.phase = Math.random() * Math.PI * 2;
+      this.nextCoinX += this.flying ? 110 : 220;
+    }
+  }
+
+  private collectCoins(): void {
+    const cy = this.feet + (this.crouched() ? 24 : 62);
+    for (const c of this.coins) {
+      if (!c.alive) continue;
+      const sx = c.x - this.scroll;
+      const dx = sx - this.px;
+      const dy = c.y - cy;
+      if (dx * dx + dy * dy > 64 * 64) continue;
+      c.alive = false;
+      this.coinChain += 1;
+      this.coinChainT = 0.85;
+      const bonus = 40 * this.coinChain;
+      this.score += bonus;
+      if (this.score > this.save.best) {
+        this.save.best = this.score;
+        this.newBest = this.score > this.bestAtStart;
+        this.dirty = true;
+      }
+      sfx.coin();
+      this.floater(`+${bonus}`, sx, this.view.ground - c.y - 18, "#f2c14e");
+      this.burstAt(c.x, c.y, 6, "#f2c14e");
+    }
+  }
+
   private addSpark(x: number, y: number, wing = false): void {
     const s = this.alloc(this.sparks, makeSpark);
     s.alive = true;
@@ -1001,6 +1058,7 @@ export class Runner {
     const limit = this.scroll - 160;
     for (const o of this.obstacles) if (o.alive && o.x + o.w < limit) o.alive = false;
     for (const s of this.sparks) if (s.alive && s.x < limit) s.alive = false;
+    for (const c of this.coins) if (c.alive && c.x < limit) c.alive = false;
   }
 
   private alloc<T extends { alive: boolean }>(pool: T[], make: () => T): T {
@@ -1550,6 +1608,24 @@ export class Runner {
       ctx.bezierCurveTo(10, -18, 18, -6, 0, 8);
       ctx.fill();
       ctx.restore();
+    }
+    for (const c of this.coins) {
+      if (!c.alive) continue;
+      const x = c.x - this.scroll;
+      const bob = Math.sin(this.time * 4 + c.phase) * 5;
+      const y = ground - c.y - bob;
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(242,193,78,0.28)";
+      ctx.arc(x, y, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = "#f2c14e";
+      ctx.arc(x, y, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = "#fff4c8";
+      ctx.arc(x - 3, y - 3, 4, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 
