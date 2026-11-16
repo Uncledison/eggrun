@@ -926,7 +926,7 @@ export class Runner {
     this.dpr = Math.min(2, window.devicePixelRatio || 1);
     this.canvas.width = Math.floor(this.cssW * this.dpr);
     this.canvas.height = Math.floor(this.cssH * this.dpr);
-    const worldW = this.cssW < 720 ? 880 : this.cssW < 1200 ? 1000 : 1120;
+    const worldW = this.cssW < 480 ? 500 : this.cssW < 720 ? 680 : this.cssW < 1200 ? 1000 : 1120;
     const scale = this.cssW / worldW;
     this.view.w = worldW;
     this.view.scale = scale;
