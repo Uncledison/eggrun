@@ -172,8 +172,8 @@ export class Runner {
   private shieldsGiven = 0;
   private invuln = 0;
   private lastWeather: "clear" | "wind" | "rain" | "snow" = "clear";
-  private wingAcc = 0;
-  private hundredFlown = false;
+  private nextWingAt = 10000;
+  private flapSign = 0;
   private flying = false;
   private flightLabel = "";
   private flightT = 0;
@@ -325,20 +325,28 @@ export class Runner {
   }
 
   private checkFlight(): void {
-    if (this.hundredFlown || this.score < 100000) return;
-    this.hundredFlown = true;
-    this.startFlight(10);
+    while (this.score >= this.nextWingAt) {
+      const peak = (JUMP_V * JUMP_V) / (2 * GRAVITY);
+      this.addSpark(this.scroll + this.view.w + 40, peak * 0.96, true);
+      this.nextWingAt = this.advanceWingScore(this.nextWingAt);
+    }
+  }
+
+  private advanceWingScore(after: number): number {
+    if (after < 100000) return after + 30000;
+    if (after < 200000) return after + 20000;
+    return after + 10000;
   }
 
   private startFlight(seconds: number): void {
     const fresh = !this.flying;
     this.flying = true;
-    this.flightLabel = seconds >= 10 ? "10초 비행" : "5초 비행";
+    this.flightLabel = "3초 비행";
     this.flightT = Math.max(this.flightT, seconds);
     if (fresh) this.flightTarget = Math.max(this.feet + 90, this.view.h * 0.42);
     this.grounded = false;
     this.queued = 0;
-    this.floater(seconds >= 10 ? "10초 비행" : "5초 비행", this.px, this.view.ground - this.feet - 110, "#9fd4ff");
+    this.floater("3초 비행", this.px, this.view.ground - this.feet - 110, "#9fd4ff");
   }
 
   begin(): void {
@@ -362,8 +370,8 @@ export class Runner {
     this.shieldsGiven = 0;
     this.invuln = 0;
     this.lastWeather = "clear";
-    this.wingAcc = 0;
-    this.hundredFlown = false;
+    this.nextWingAt = 10000;
+    this.flapSign = 0;
     this.flying = false;
     this.flightLabel = "";
     this.flightT = 0;
@@ -599,6 +607,11 @@ export class Runner {
         this.flightLabel = "";
         this.vy = -120;
         this.floater("낙하", this.px, this.view.ground - this.feet - 70, "#f6f1e7");
+      } else {
+        const flap = Math.sin(this.time * 2.4);
+        const sign = flap >= 0 ? 1 : -1;
+        if (sign !== this.flapSign && sign > 0) sfx.peep();
+        this.flapSign = sign;
       }
     } else if (!resting) {
       this.vy -= GRAVITY * h;
@@ -655,12 +668,6 @@ export class Runner {
     this.collectSparks();
     this.scorePasses();
     this.spawnIfNeeded();
-    this.wingAcc += h;
-    if (this.wingAcc >= 7) {
-      this.wingAcc -= 7;
-      const peak = (JUMP_V * JUMP_V) / (2 * GRAVITY);
-      this.addSpark(this.scroll + this.view.w + 36, peak * 0.96, true);
-    }
     this.recycle();
     if (this.grounded && this.slideT <= 0) this.spawnDust(h, 1);
     this.beatAcc += h;
@@ -891,7 +898,7 @@ export class Runner {
       const dy = s.y - cy;
       if (dx * dx + dy * dy > 72 * 72) continue;
       s.alive = false;
-      if (s.wing) this.startFlight(5);
+      if (s.wing) this.startFlight(3);
       this.combo += 1;
       this.peakCombo = Math.max(this.peakCombo, this.combo);
       this.chain = CHAIN;
@@ -1182,14 +1189,15 @@ export class Runner {
   }
 
   private refreshShields(): void {
-    const earned = Math.min(3, Math.floor(this.score / 1000));
-    while (this.shieldsGiven < earned) {
-      this.shieldsGiven += 1;
-      this.shields += 1;
-      this.title = "보호막";
-      this.titleT = 1.8;
-      this.puff(12, "#7ee0c0", 0.55);
-    }
+    const tier = Math.floor(this.score / 5000);
+    if (tier < 1 || tier <= this.shieldsGiven) return;
+    const grant = this.shields < 1;
+    this.shieldsGiven = tier;
+    if (!grant) return;
+    this.shields = 1;
+    this.title = "보호막";
+    this.titleT = 1.8;
+    this.puff(12, "#7ee0c0", 0.55);
   }
 
   private weatherKind(): "clear" | "wind" | "rain" | "snow" {
@@ -1493,14 +1501,18 @@ export class Runner {
     ctx.arc(0, 0, 24, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = "#fffaf0";
-    ctx.lineWidth = 7;
-    ctx.lineCap = "round";
+    ctx.fillStyle = "#ffe14a";
     ctx.beginPath();
-    ctx.moveTo(-11, -11);
-    ctx.lineTo(11, 11);
-    ctx.moveTo(11, -11);
-    ctx.lineTo(-11, 11);
+    ctx.moveTo(8, -18);
+    ctx.lineTo(-4, -2);
+    ctx.lineTo(5, -2);
+    ctx.lineTo(-10, 18);
+    ctx.lineTo(3, 1);
+    ctx.lineTo(-6, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#fffaf0";
+    ctx.lineWidth = 2;
     ctx.stroke();
     for (let i = 0; i < 4; i++) {
       const a = this.time * 4 + phase + i * 1.57;
@@ -1524,27 +1536,16 @@ export class Runner {
         continue;
       }
       ctx.beginPath();
-      ctx.fillStyle = "rgba(94,224,181,0.28)";
-      ctx.arc(x, y, 28, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,93,122,0.28)";
+      ctx.arc(x, y, 26, 0, Math.PI * 2);
       ctx.fill();
       ctx.save();
       ctx.translate(x, y);
-      ctx.rotate(this.time * 2 + s.phase);
-      ctx.fillStyle = "#f6f1e7";
+      ctx.fillStyle = "#ff5d7a";
       ctx.beginPath();
-      ctx.moveTo(0, -14);
-      ctx.lineTo(9, 0);
-      ctx.lineTo(0, 14);
-      ctx.lineTo(-9, 0);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = "#5ee0b5";
-      ctx.beginPath();
-      ctx.moveTo(0, -8);
-      ctx.lineTo(4.8, 0);
-      ctx.lineTo(0, 8);
-      ctx.lineTo(-4.8, 0);
-      ctx.closePath();
+      ctx.moveTo(0, 8);
+      ctx.bezierCurveTo(-18, -6, -10, -18, 0, -8);
+      ctx.bezierCurveTo(10, -18, 18, -6, 0, 8);
       ctx.fill();
       ctx.restore();
     }
@@ -1583,27 +1584,9 @@ export class Runner {
     ctx.rotate(falling ? spin * 2.1 : clamp(this.flying ? -this.flightVy / 700 : 0, -0.65, 0.45));
 
     if (this.flying && !falling) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(-16, -46);
-      const segments = 8;
-      for (let i = 1; i <= segments; i++) {
-        const t = i / segments;
-        const wave = Math.sin(this.time * 15 - i * 0.75) * (8 + i * 5);
-        ctx.lineTo(-16 - t * 92 + wave, -46 + t * 78 + Math.cos(this.time * 15 - i * 0.5) * 6);
-      }
-      for (let i = segments; i >= 0; i--) {
-        const t = i / segments;
-        const wave = Math.sin(this.time * 15 - i * 0.75) * (8 + i * 5);
-        ctx.lineTo(-4 - t * 78 + wave, -30 + t * 86);
-      }
-      ctx.closePath();
-      ctx.fillStyle = "#e10600";
-      ctx.fill();
-      ctx.strokeStyle = "#ff5a45";
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      ctx.restore();
+      const flap = Math.sin(this.time * 2.4);
+      this.drawCloudWing(ctx, -1, flap);
+      this.drawCloudWing(ctx, 1, flap);
     }
 
     ctx.scale(sx, sy);
@@ -1615,13 +1598,19 @@ export class Runner {
     ctx.fill();
 
     if (this.shields > 0 && !falling) {
-      for (let i = 0; i < this.shields; i++) {
-        ctx.beginPath();
-        ctx.strokeStyle = `rgba(126,224,192,${0.45 + Math.sin(this.time * 6 + i) * 0.15})`;
-        ctx.lineWidth = 2.4;
-        ctx.arc(0, 0, R + 8 + i * 5, 0, Math.PI * 2);
-        ctx.stroke();
-      }
+      ctx.save();
+      ctx.scale(1 / sx, 1 / sy);
+      const pulse = 0.35 + (Math.sin(this.time * 3.2) * 0.5 + 0.5) * 0.65;
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(126,224,192,${0.08 + pulse * 0.16})`;
+      ctx.arc(0, 0, R + 28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = `rgba(214,255,240,${0.35 + pulse * 0.65})`;
+      ctx.arc(0, 0, R + 22, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
     }
 
     const cycle = this.time % 3.1;
@@ -1653,6 +1642,14 @@ export class Runner {
         ctx.moveTo(-8, 0);
         ctx.lineTo(8, 0);
         ctx.stroke();
+      } else if (this.flying) {
+        ctx.beginPath();
+        ctx.arc(0, 0, 9.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = "#f6f1e7";
+        ctx.arc(2.1, -2.4, 3.1, 0, Math.PI * 2);
+        ctx.fill();
       } else {
         ctx.beginPath();
         ctx.ellipse(0, 0, 7.4, 13, 0, 0, Math.PI * 2);
@@ -1663,6 +1660,32 @@ export class Runner {
         ctx.fill();
       }
       ctx.restore();
+    }
+    if (this.flying && !falling) {
+      ctx.beginPath();
+      ctx.fillStyle = "#1a120e";
+      ctx.ellipse(12, 18, 4.2, 5.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  private drawCloudWing(ctx: CanvasRenderingContext2D, side: number, flap: number): void {
+    ctx.save();
+    ctx.translate(side * 28, -36 + flap * 14);
+    ctx.rotate(side * (-0.25 + flap * 0.45));
+    ctx.fillStyle = "#fff7f4";
+    const puffs: Array<[number, number, number]> = [
+      [side * 10, 2, 16],
+      [side * 26, -10, 15],
+      [side * 42, 0, 13],
+      [side * 22, 10, 14],
+      [side * 6, 10, 11],
+    ];
+    for (const [x, y, r] of puffs) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   }

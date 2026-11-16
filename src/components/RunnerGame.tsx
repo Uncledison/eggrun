@@ -265,7 +265,7 @@ export function RunnerGame() {
       ) : null}
       {hud.flying && hud.mode === "run" ? (
         <p className="pointer-events-none absolute top-[22%] left-1/2 z-10 -translate-x-1/2 text-center font-display text-6xl leading-none text-white drop-shadow-[0_4px_0_#10141c] sm:text-7xl">
-          {hud.flightLabel || "5초 비행"}
+          {hud.flightLabel || "3초 비행"}
         </p>
       ) : null}
       {hud.title ? (
@@ -288,7 +288,7 @@ export function RunnerGame() {
             <p className="text-xs font-semibold tracking-widest text-primary">ENDLESS ROOFTOP</p>
             <h1 className="font-display mt-1 text-5xl leading-none text-fg">에그런</h1>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              상자는 점프, 머리 위 표지판은 슬라이드. 1000점마다 방어막이 생기고, 한 번 부딪히면 사라집니다.
+              상자는 점프, 머리 위 표지판은 슬라이드. 번개를 먹으면 3초 비행. 보호막은 5000점마다 하나.
             </p>
             <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl bg-bg px-2 py-3">

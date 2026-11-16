@@ -119,6 +119,28 @@ function noiseBurst(dur: number, peak: number, freq: number): void {
   };
 }
 
+function chirp(delay: number, from: number, to: number): void {
+  if (!bus || muted) return;
+  const ctx = bus.ctx;
+  const t = ctx.currentTime + delay;
+  const osc = ctx.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(from, t);
+  osc.frequency.exponentialRampToValueAtTime(to, t + 0.07);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.07, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+  osc.connect(g);
+  g.connect(bus.sfx);
+  osc.start(t);
+  osc.stop(t + 0.1);
+  osc.onended = () => {
+    osc.disconnect();
+    g.disconnect();
+  };
+}
+
 export const sfx = {
   jump() {
     tone(260, 0.11, "square", 0.055, 680);
@@ -148,5 +170,9 @@ export const sfx = {
   tick(beat: number) {
     const scale = [196, 247, 294, 330, 392];
     musicTone(scale[beat % scale.length] ?? 196, 0.1, 0.02);
+  },
+  peep() {
+    chirp(0, 920, 1480);
+    chirp(0.11, 1040, 1620);
   },
 };
