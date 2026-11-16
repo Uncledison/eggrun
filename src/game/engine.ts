@@ -333,17 +333,16 @@ export class Runner {
   }
 
   private checkFlight(): void {
-    while (this.score >= this.nextWingAt) {
-      const peak = (JUMP_V * JUMP_V) / (2 * GRAVITY);
-      this.addSpark(this.scroll + this.view.w + 40, peak * 0.96, true);
-      this.nextWingAt = this.advanceWingScore(this.nextWingAt);
-    }
+    if (this.flying || this.score < this.nextWingAt) return;
+    const peak = (JUMP_V * JUMP_V) / (2 * GRAVITY);
+    this.addSpark(this.scroll + this.view.w + 40, peak * 0.96, true);
+    while (this.nextWingAt <= this.score) this.nextWingAt = this.advanceWingScore(this.nextWingAt);
   }
 
   private advanceWingScore(after: number): number {
     if (after < 100000) return after + 30000;
     if (after < 200000) return after + 20000;
-    return after + 10000;
+    return after + 40000;
   }
 
   private startFlight(seconds: number): void {
@@ -916,7 +915,7 @@ export class Runner {
       const dy = s.y - cy;
       if (dx * dx + dy * dy > 72 * 72) continue;
       s.alive = false;
-      if (s.wing) this.startFlight(3);
+      if (s.wing && !this.flying) this.startFlight(3);
       this.combo += 1;
       this.peakCombo = Math.max(this.peakCombo, this.combo);
       this.chain = CHAIN;
@@ -1009,15 +1008,20 @@ export class Runner {
   private spawnCoins(h: number): void {
     this.coinChainT = Math.max(0, this.coinChainT - h);
     if (this.coinChainT <= 0) this.coinChain = 0;
-    const horizon = this.scroll + this.view.w + 80;
-    const sky = Math.max(210, this.view.h * 0.46);
+    if (!this.flying) {
+      for (const c of this.coins) c.alive = false;
+      this.nextCoinX = this.scroll + 90;
+      return;
+    }
+    const horizon = this.scroll + this.view.w * 0.72;
+    if (this.nextCoinX < this.scroll) this.nextCoinX = this.scroll + 90;
     while (this.nextCoinX < horizon) {
       const c = this.alloc(this.coins, makeCoin);
       c.alive = true;
       c.x = this.nextCoinX;
-      c.y = this.flying ? clamp(this.flightTarget, 120, this.view.h * 0.62) : sky;
+      c.y = clamp(this.flightTarget, 120, this.view.h * 0.62);
       c.phase = Math.random() * Math.PI * 2;
-      this.nextCoinX += this.flying ? 110 : 220;
+      this.nextCoinX += 160;
     }
   }
 
@@ -1030,7 +1034,7 @@ export class Runner {
       const dy = c.y - cy;
       if (dx * dx + dy * dy > 64 * 64) continue;
       c.alive = false;
-      this.coinChain += 1;
+      this.coinChain = Math.min(5, this.coinChain + 1);
       this.coinChainT = 0.85;
       const bonus = 40 * this.coinChain;
       this.score += bonus;
