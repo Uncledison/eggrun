@@ -96,7 +96,7 @@ export async function shareScore(name: string, score: number): Promise<"shared" 
       content: {
         title: `${who} ${points}`,
         description: "에그런에서 같이 달려 보세요.",
-        imageUrl: `${GAME_URL}/share-egg-sq.png?v=2`,
+        imageUrl: `${GAME_URL}/share-egg-sq.png?v=3`,
         link: { mobileWebUrl: GAME_URL, webUrl: GAME_URL },
       },
       buttons: [{ title: "게임 열기", link: { mobileWebUrl: GAME_URL, webUrl: GAME_URL } }],
