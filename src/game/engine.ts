@@ -23,6 +23,7 @@ export type Snapshot = {
   reason: DeathReason;
   pace: Pace;
   shields: number;
+  flying: boolean;
 };
 
 declare global {
@@ -169,6 +170,11 @@ export class Runner {
   private shieldsGiven = 0;
   private invuln = 0;
   private lastWeather: "clear" | "wind" | "rain" | "snow" = "clear";
+  private flightMarks = 0;
+  private flying = false;
+  private flightT = 0;
+  private flightTarget = 220;
+  private flightVy = 0;
   private drops = Array.from({ length: 80 }, () => ({
     x: Math.random(),
     y: Math.random(),
@@ -271,6 +277,10 @@ export class Runner {
       return;
     }
     if (this.mode !== "run") return;
+    if (this.flying) {
+      this.nudgeFly(1);
+      return;
+    }
     if (now - this.lastJumpAt < 40) return;
     this.lastJumpAt = now;
     if (this.airLeft <= 0) return;
@@ -284,7 +294,39 @@ export class Runner {
       return;
     }
     if (this.mode !== "run") return;
+    if (this.flying) {
+      this.nudgeFly(-1);
+      return;
+    }
     this.slideQueued = true;
+  }
+
+  inFlight(): boolean {
+    return this.flying && this.mode === "run";
+  }
+
+  flyTo(clientY: number): void {
+    if (!this.inFlight()) return;
+    const rect = this.canvas.getBoundingClientRect();
+    const t = clamp((clientY - rect.top) / Math.max(1, rect.height), 0, 1);
+    this.flightTarget = lerp(this.view.h * 0.62, 90, t);
+  }
+
+  private nudgeFly(dir: number): void {
+    if (!this.flying) return;
+    this.flightTarget = clamp(this.flightTarget + dir * 80, 90, this.view.h * 0.62);
+  }
+
+  private checkFlight(): void {
+    const mark = Math.floor(this.score / 10000);
+    if (mark <= this.flightMarks) return;
+    this.flightMarks = mark;
+    this.flying = true;
+    this.flightT = 5;
+    this.flightTarget = Math.max(this.feet + 80, this.view.h * 0.4);
+    this.grounded = false;
+    this.queued = 0;
+    this.floater("비행", this.px, this.view.ground - this.feet - 110, "#9fd4ff");
   }
 
   begin(): void {
@@ -308,6 +350,10 @@ export class Runner {
     this.shieldsGiven = 0;
     this.invuln = 0;
     this.lastWeather = "clear";
+    this.flightMarks = 0;
+    this.flying = false;
+    this.flightT = 0;
+    this.flightVy = 0;
     this.tintTier = 0;
     this.tintR = BODY_TIERS[0].rgb[0];
     this.tintG = BODY_TIERS[0].rgb[1];
@@ -514,14 +560,27 @@ export class Runner {
       }
     }
 
-    if (this.queued > 0 && this.jumpBuffer > 0 && this.canJump()) {
+    if (this.queued > 0 && this.jumpBuffer > 0 && this.canJump() && !this.flying) {
       this.queued -= 1;
       if (this.queued <= 0) this.jumpBuffer = 0;
       this.doJump();
     }
 
-    const resting = this.grounded && this.feet <= 0 && this.vy <= 0;
-    if (!resting) {
+    const resting = this.grounded && this.feet <= 0 && this.vy <= 0 && !this.flying;
+    if (this.flying) {
+      this.flightT -= h;
+      const goal = clamp(this.flightTarget, 90, this.view.h * 0.62);
+      const prev = this.feet;
+      this.feet += (goal - this.feet) * Math.min(1, h * 5);
+      this.flightVy = (this.feet - prev) / Math.max(h, 0.001);
+      this.vy = this.flightVy;
+      this.grounded = false;
+      if (this.flightT <= 0) {
+        this.flying = false;
+        this.vy = -120;
+        this.floater("낙하", this.px, this.view.ground - this.feet - 70, "#f6f1e7");
+      }
+    } else if (!resting) {
       this.vy -= GRAVITY * h;
       this.feet += this.vy * h;
     }
@@ -541,7 +600,7 @@ export class Runner {
       const wasGround = this.grounded;
       this.grounded = false;
       if (wasGround && this.feet <= 2) this.coyote = COYOTE;
-      if (!supported && this.feet < -24 && this.vy < 0) {
+      if (!supported && this.feet < -24 && this.vy < 0 && !this.flying) {
         if (this.invuln > 0) {
           this.feet = 20;
           this.vy = 360;
@@ -570,6 +629,7 @@ export class Runner {
       }
     }
 
+    this.checkFlight();
     this.collide(h);
     if (this.mode !== "run") return;
     this.collectSparks();
@@ -587,6 +647,7 @@ export class Runner {
     this.saveTimer -= h;
     if (this.dirty && this.saveTimer <= 0) this.persist(false);
     this.refreshShields();
+    this.checkFlight();
     this.updateWeather(h);
     this.refreshTint(h);
   }
@@ -684,7 +745,7 @@ export class Runner {
   }
 
   private collide(h: number): void {
-    if (this.invuln > 0) return;
+    if (this.invuln > 0 || this.flying) return;
     const prevScroll = this.scroll - this.speed * h;
     const hb = this.hurt();
     const pL = this.px - hb.halfW;
@@ -1075,6 +1136,7 @@ export class Runner {
       reason: this.reason,
       pace: this.pace,
       shields: this.shields,
+      flying: this.flying,
     };
   }
 
@@ -1417,7 +1479,7 @@ export class Runner {
     ctx.ellipse(0, 5, 26 * sx * shade, 6.5 * shade, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.rotate(falling ? spin * 2.1 : 0);
+    ctx.rotate(falling ? spin * 2.1 : clamp(this.flying ? -this.flightVy / 700 : 0, -0.65, 0.45));
     ctx.scale(sx, sy);
     ctx.translate(0, -R);
 

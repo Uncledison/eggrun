@@ -14,6 +14,7 @@ type Hud = {
   reason: DeathReason;
   pace: Pace;
   shields: number;
+  flying: boolean;
 };
 
 const initialHud: Hud = {
@@ -28,6 +29,7 @@ const initialHud: Hud = {
   reason: "",
   pace: "mid",
   shields: 0,
+  flying: false,
 };
 
 function fmt(n: number): string {
@@ -79,6 +81,7 @@ export function RunnerGame() {
         prev.reason === s.reason &&
         prev.pace === s.pace &&
         prev.shields === s.shields &&
+        prev.flying === s.flying &&
         prev.score === score &&
         prev.distance === distance
       ) {
@@ -96,6 +99,7 @@ export function RunnerGame() {
         reason: s.reason,
         pace: s.pace,
         shields: s.shields,
+        flying: s.flying,
       };
       hudRef.current = next;
       setHud(next);
@@ -117,10 +121,20 @@ export function RunnerGame() {
 
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0) return;
+      if (engineRef.current?.inFlight()) {
+        engineRef.current.flyTo(e.clientY);
+        down = { x: e.clientX, y: e.clientY, t: performance.now() };
+        used = true;
+        return;
+      }
       down = { x: e.clientX, y: e.clientY, t: performance.now() };
       used = false;
     };
     const onMove = (e: PointerEvent) => {
+      if (engineRef.current?.inFlight()) {
+        if (down) engineRef.current.flyTo(e.clientY);
+        return;
+      }
       if (!down || used) return;
       const dy = e.clientY - down.y;
       const dx = e.clientX - down.x;
@@ -130,6 +144,10 @@ export function RunnerGame() {
       }
     };
     const onUp = (e: PointerEvent) => {
+      if (engineRef.current?.inFlight()) {
+        down = null;
+        return;
+      }
       if (!down) return;
       const dy = e.clientY - down.y;
       const dx = e.clientX - down.x;
@@ -237,7 +255,12 @@ export function RunnerGame() {
           </section>
         </div>
       ) : null}
-      {coach && hud.mode === "run" ? (
+      {hud.flying && hud.mode === "run" ? (
+        <p className="pointer-events-none absolute top-24 left-1/2 z-10 w-[min(92vw,22rem)] -translate-x-1/2 rounded-full bg-surface/95 px-4 py-2 text-center text-sm font-semibold text-fg shadow-lg">
+          5초 비행. 손가락을 위아래로 움직이세요
+        </p>
+      ) : null}
+      {coach && hud.mode === "run" && !hud.flying ? (
         <p className="pointer-events-none absolute top-24 left-1/2 z-10 w-[min(92vw,20rem)] -translate-x-1/2 rounded-full bg-surface/95 px-4 py-2 text-center text-sm font-semibold text-fg shadow-lg">
           점프를 연타하면 세 번까지 뜁니다
         </p>
