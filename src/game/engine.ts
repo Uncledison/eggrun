@@ -1620,13 +1620,7 @@ export class Runner {
     if (this.shields > 0 && !falling) {
       ctx.save();
       ctx.scale(1 / sx, 1 / sy);
-      this.drawNeon(ctx, "126,224,192", R + 16, pulse, Math.abs(Math.sin(this.time * 13)), "line");
-      ctx.restore();
-    }
-    if (this.flying && !falling) {
-      ctx.save();
-      ctx.scale(1 / sx, 1 / sy);
-      this.drawNeon(ctx, "255,220,70", R + 52, pulse, flicker, "line");
+      this.drawNeon(ctx, "126,224,192", R + 14, pulse, flicker, "line");
       ctx.restore();
     }
 
@@ -1696,18 +1690,10 @@ export class Runner {
       return;
     }
     ctx.beginPath();
-    ctx.lineWidth = 1.4;
-    ctx.strokeStyle = `rgba(${rgb},0.95)`;
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = `rgba(${rgb},${0.55 + pulse * 0.4})`;
     ctx.arc(0, 0, lineR, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.save();
-    ctx.globalAlpha = 0.12 + flicker * 0.88;
-    ctx.beginPath();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = `rgba(${rgb},1)`;
-    ctx.arc(0, 0, outer, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
   }
 
   private drawStreaks(ctx: CanvasRenderingContext2D): void {
