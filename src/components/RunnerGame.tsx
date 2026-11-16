@@ -299,14 +299,14 @@ export function RunnerGame() {
       ) : null}
 
       {hud.mode === "menu" ? (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-start justify-center p-4 sm:items-center sm:justify-end sm:p-10">
-          <section className="panel-in pointer-events-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-surface/95 p-6 shadow-2xl backdrop-blur-md">
-            <p className="text-xs font-semibold tracking-widest text-primary">ENDLESS ROOFTOP</p>
-            <h1 className="font-display mt-1 text-5xl leading-none text-fg">에그런</h1>
-            <p className="mt-3 text-sm leading-relaxed text-muted">
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-end p-3 sm:p-10">
+          <section className="panel-in pointer-events-auto max-h-[calc(100dvh-1.5rem)] w-[min(220px,58vw)] overflow-y-auto rounded-2xl border border-border bg-surface/95 p-3 shadow-2xl backdrop-blur-md sm:w-full sm:max-w-md sm:p-6">
+            <p className="text-[10px] font-semibold tracking-widest text-primary sm:text-xs">ENDLESS ROOFTOP</p>
+            <h1 className="font-display mt-1 text-3xl leading-none text-fg sm:text-5xl">에그런</h1>
+            <p className="mt-3 hidden text-sm leading-relaxed text-muted sm:block">
               상자는 점프, 머리 위 표지판은 슬라이드. 번개를 먹으면 3초 비행. 보호막은 2만 점마다 하나.
             </p>
-            <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
+            <dl className="mt-4 hidden grid-cols-3 gap-2 text-center sm:grid">
               <div className="rounded-xl bg-bg px-2 py-3">
                 <ArrowUp className="mx-auto size-4 text-primary" aria-hidden="true" />
                 <dt className="mt-1 text-sm font-semibold text-fg">점프</dt>
@@ -323,10 +323,10 @@ export function RunnerGame() {
                 <dd className="text-xs text-muted">연속 회피</dd>
               </div>
             </dl>
-            <p className="mt-4 text-sm text-muted">
+            <p className="mt-3 hidden text-sm text-muted sm:block">
               최고 기록 <span className="font-semibold text-gold">{fmt(hud.best)}</span>
             </p>
-            <div className="mt-3 rounded-xl border border-gold/40 bg-gold/15 px-3 py-3">
+            <div className="mt-3 rounded-xl border border-gold/40 bg-gold/15 px-2.5 py-2 sm:px-3 sm:py-3">
               <p className="text-sm font-semibold tracking-wide text-gold">전체 순위</p>
               {ranks.length > 0 ? (
                 <ol className="mt-2 space-y-1.5">
@@ -343,7 +343,7 @@ export function RunnerGame() {
                 <p className="mt-1 text-sm text-muted">아직 기록이 없습니다</p>
               )}
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2" role="group" aria-label="시작 속도">
+            <div className="mt-3 grid grid-cols-3 gap-1.5 sm:mt-4 sm:gap-2" role="group" aria-label="시작 속도">
               {(
                 [
                   ["slow", "느리게"],
@@ -354,7 +354,7 @@ export function RunnerGame() {
                 <button
                   key={id}
                   type="button"
-                  className={`h-11 rounded-xl text-sm font-semibold ${
+                  className={`h-9 rounded-lg text-xs font-semibold sm:h-11 sm:rounded-xl sm:text-sm ${
                     hud.pace === id ? "bg-primary text-on-primary" : "bg-bg text-fg"
                   }`}
                   onPointerDown={(e) => e.stopPropagation()}
@@ -366,7 +366,7 @@ export function RunnerGame() {
             </div>
             <button
               type="button"
-              className="mt-4 h-14 w-full rounded-xl bg-primary text-lg font-semibold text-on-primary"
+              className="mt-2 h-11 w-full rounded-xl bg-primary text-base font-semibold text-on-primary sm:mt-4 sm:h-14 sm:text-lg"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => engineRef.current?.begin()}
             >
