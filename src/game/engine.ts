@@ -816,11 +816,12 @@ export class Runner {
     const gap = this.gapAfter(kind);
     this.nextX = o.x + o.w + gap;
     this.lastKind = kind;
-    if (kind === "low" && Math.random() < 0.7) {
-      this.addSpark(o.x + o.w * 0.5, o.h + 48);
-      if (d > 0.3 && Math.random() < 0.5) this.addSpark(o.x + o.w * 0.5 - 28, o.h + 78);
-    } else if (kind !== "pit" && Math.random() < 0.4) {
-      this.addSpark(o.x + o.w + gap * 0.42, 28);
+    const peak = (JUMP_V * JUMP_V) / (2 * GRAVITY);
+    const itemY = peak * 0.96;
+    if (kind === "low" || kind === "tall") {
+      this.addSpark(o.x + o.w + 28 + this.speed * 0.08, itemY);
+    } else if (kind === "pit") {
+      this.addSpark(o.x + o.w * 0.5, itemY);
     }
   }
 
