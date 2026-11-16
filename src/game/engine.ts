@@ -1584,9 +1584,23 @@ export class Runner {
     ctx.rotate(falling ? spin * 2.1 : clamp(this.flying ? -this.flightVy / 700 : 0, -0.65, 0.45));
 
     if (this.flying && !falling) {
-      const flap = Math.sin(this.time * 2.4);
-      this.drawCloudWing(ctx, -1, flap);
-      this.drawCloudWing(ctx, 1, flap);
+      ctx.save();
+      ctx.translate(0, -36);
+      ctx.fillStyle = "rgba(255, 214, 70, 0.28)";
+      ctx.beginPath();
+      ctx.arc(0, 4, 58, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffe14a";
+      ctx.beginPath();
+      ctx.moveTo(22, -52);
+      ctx.lineTo(-8, -6);
+      ctx.lineTo(14, -6);
+      ctx.lineTo(-26, 52);
+      ctx.lineTo(8, 2);
+      ctx.lineTo(-16, 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
     }
 
     ctx.scale(sx, sy);
@@ -1642,14 +1656,6 @@ export class Runner {
         ctx.moveTo(-8, 0);
         ctx.lineTo(8, 0);
         ctx.stroke();
-      } else if (this.flying) {
-        ctx.beginPath();
-        ctx.arc(0, 0, 9.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.fillStyle = "#f6f1e7";
-        ctx.arc(2.1, -2.4, 3.1, 0, Math.PI * 2);
-        ctx.fill();
       } else {
         ctx.beginPath();
         ctx.ellipse(0, 0, 7.4, 13, 0, 0, Math.PI * 2);
@@ -1660,32 +1666,6 @@ export class Runner {
         ctx.fill();
       }
       ctx.restore();
-    }
-    if (this.flying && !falling) {
-      ctx.beginPath();
-      ctx.fillStyle = "#1a120e";
-      ctx.ellipse(12, 18, 4.2, 5.2, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
-  }
-
-  private drawCloudWing(ctx: CanvasRenderingContext2D, side: number, flap: number): void {
-    ctx.save();
-    ctx.translate(side * 28, -36 + flap * 14);
-    ctx.rotate(side * (-0.25 + flap * 0.45));
-    ctx.fillStyle = "#fff7f4";
-    const puffs: Array<[number, number, number]> = [
-      [side * 10, 2, 16],
-      [side * 26, -10, 15],
-      [side * 42, 0, 13],
-      [side * 22, 10, 14],
-      [side * 6, 10, 11],
-    ];
-    for (const [x, y, r] of puffs) {
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
     }
     ctx.restore();
   }
