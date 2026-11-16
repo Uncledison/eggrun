@@ -3,11 +3,11 @@ import { createServerFn } from "@tanstack/react-start";
 export type BoardRow = { name: string; score: number };
 
 function cleanName(name: string): string {
-  return name.trim().slice(0, 8);
+  return name.trim().slice(0, 12);
 }
 
 function validName(name: string): boolean {
-  return /^[\p{L}\p{N}]{1,8}$/u.test(name);
+  return /^[\p{L}\p{N}]{1,12}$/u.test(name);
 }
 
 export const listRanks = createServerFn({ method: "GET" }).handler(async () => {

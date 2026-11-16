@@ -397,9 +397,8 @@ export function RunnerGame() {
             >
               <input
                 value={runnerName}
-                onChange={(e) => setRunnerName(e.target.value.slice(0, 8))}
+                onChange={(e) => setRunnerName(e.target.value.slice(0, 12))}
                 placeholder="이니셜"
-                maxLength={8}
                 className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-bg px-3 text-base text-fg"
                 aria-label="이름 또는 이니셜"
               />
@@ -425,11 +424,11 @@ export function RunnerGame() {
               className="mt-3 h-11 w-full rounded-xl border border-border text-sm font-semibold text-fg"
               onClick={() => {
                 void shareScore(runnerName, hud.score).then((result) => {
-                  setShareNote(result === "copied" ? "점수를 복사했습니다" : result === "shared" ? "공유했습니다" : "");
+                  setShareNote(result === "copied" ? "링크를 복사했습니다" : result === "shared" ? "카톡 공유를 열었습니다" : "");
                 });
               }}
             >
-              점수 공유
+              카톡으로 공유
             </button>
             {shareNote ? <p className="mt-2 text-center text-xs text-accent">{shareNote}</p> : null}
             <button
