@@ -26,14 +26,19 @@ export const submitRank = createServerFn({ method: "POST" })
     return { name, score };
   })
   .handler(async ({ data }) => {
-    const { getSql } = await import("@/lib/db");
-    const sql = await getSql();
-    await sql`
-      insert into ranks (name, score)
-      values (${data.name}, ${data.score})
-      on conflict (name) do update
-      set score = excluded.score, created_at = now()
-      where ranks.score < excluded.score
-    `;
-    return sql<BoardRow>`select name, score from ranks order by score desc, id asc limit 10`;
+    try {
+      const { getSql } = await import("@/lib/db");
+      const sql = await getSql();
+      await sql`
+        insert into ranks (name, score)
+        values (${data.name}, ${data.score})
+        on conflict (name) do update
+        set score = excluded.score, created_at = now()
+        where ranks.score < excluded.score
+      `;
+      return await sql<BoardRow>`select name, score from ranks order by score desc, id asc limit 10`;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "기록을 저장하지 못했습니다";
+      throw new Error(message);
+    }
   });
