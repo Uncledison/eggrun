@@ -1135,6 +1135,8 @@ export class Runner {
   }
 
   private keyDown(e: KeyboardEvent): void {
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
     if (e.repeat) return;
     if (e.code === "Escape" || e.code === "KeyP") {
       e.preventDefault();
