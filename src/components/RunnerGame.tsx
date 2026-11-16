@@ -355,7 +355,7 @@ export function RunnerGame() {
                   key={id}
                   type="button"
                   className={`h-9 rounded-lg text-xs font-semibold sm:h-11 sm:rounded-xl sm:text-sm ${
-                    hud.pace === id ? "bg-primary text-on-primary" : "bg-bg text-fg"
+                    hud.pace === id ? "bg-gold text-bg" : "bg-bg text-fg"
                   }`}
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => engineRef.current?.setPace(id)}
