@@ -1608,7 +1608,6 @@ export class Runner {
     const flicker = Math.pow(Math.abs(Math.sin(this.time * 16)), 1.4);
     ctx.save();
     ctx.scale(1 / sx, 1 / sy);
-    if (this.shields > 0 && !falling) this.drawNeon(ctx, "126,224,192", R + 16, pulse, flicker, "glow");
     if (this.flying && !falling) this.drawNeon(ctx, "255,220,70", R + 52, pulse, flicker, "glow");
     ctx.restore();
 
@@ -1620,7 +1619,7 @@ export class Runner {
     if (this.shields > 0 && !falling) {
       ctx.save();
       ctx.scale(1 / sx, 1 / sy);
-      this.drawNeon(ctx, "126,224,192", R + 14, pulse, flicker, "line");
+      this.drawNeon(ctx, "126,224,192", (R + 14) * 1.3, pulse, flicker, "line");
       ctx.restore();
     }
 
