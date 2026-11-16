@@ -466,7 +466,7 @@ export function RunnerGame() {
             >
               레벨 선택
             </button>
-            <p className="mt-3 text-center text-xs text-muted">다시 시도는 같은 속도입니다. 레벨 선택에서 느리게를 고를 수 있습니다.</p>
+
           </section>
         </div>
       ) : null}
