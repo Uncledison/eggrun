@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Pause, RotateCcw, Trophy, Volume2, VolumeX, Zap } from "lucide-react";
-import { Runner, type DeathReason, type Mode, type Snapshot } from "@/game/engine";
+import { Runner, type DeathReason, type Mode, type Pace, type Snapshot } from "@/game/engine";
 
 type Hud = {
   mode: Mode;
@@ -12,6 +12,7 @@ type Hud = {
   newBest: boolean;
   muted: boolean;
   reason: DeathReason;
+  pace: Pace;
 };
 
 const initialHud: Hud = {
@@ -24,6 +25,7 @@ const initialHud: Hud = {
   newBest: false,
   muted: false,
   reason: "",
+  pace: "mid",
 };
 
 function fmt(n: number): string {
@@ -71,6 +73,7 @@ export function RunnerGame() {
         prev.newBest === s.newBest &&
         prev.peakCombo === s.peakCombo &&
         prev.reason === s.reason &&
+        prev.pace === s.pace &&
         prev.score === score &&
         prev.distance === distance
       ) {
@@ -86,6 +89,7 @@ export function RunnerGame() {
         newBest: s.newBest,
         muted: s.muted,
         reason: s.reason,
+        pace: s.pace,
       };
       hudRef.current = next;
       setHud(next);
@@ -249,6 +253,27 @@ export function RunnerGame() {
             <p className="mt-4 text-sm text-muted">
               최고 기록 <span className="font-semibold text-gold">{fmt(hud.best)}</span>
             </p>
+            <div className="mt-4 grid grid-cols-3 gap-2" role="group" aria-label="시작 속도">
+              {(
+                [
+                  ["slow", "느리게"],
+                  ["mid", "중간"],
+                  ["fast", "빠르게"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`h-11 rounded-xl text-sm font-semibold ${
+                    hud.pace === id ? "bg-primary text-on-primary" : "bg-bg text-fg"
+                  }`}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => engineRef.current?.setPace(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <button
               type="button"
               className="mt-4 h-14 w-full rounded-xl bg-primary text-lg font-semibold text-on-primary"

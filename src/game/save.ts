@@ -1,12 +1,15 @@
 const KEY = "lumen-run-save";
 const VERSION = 1;
 
+export type Pace = "slow" | "mid" | "fast";
+
 export type SaveData = {
   version: number;
   best: number;
   bestCombo: number;
   bestDistance: number;
   muted: boolean;
+  pace: Pace;
 };
 
 const defaults: SaveData = {
@@ -15,6 +18,7 @@ const defaults: SaveData = {
   bestCombo: 0,
   bestDistance: 0,
   muted: false,
+  pace: "mid",
 };
 
 function finite(n: unknown, fallback = 0): number {
@@ -28,12 +32,14 @@ export function loadSave(): SaveData {
     if (!raw) return { ...defaults };
     const parsed = JSON.parse(raw) as Partial<SaveData>;
     let version = finite(parsed.version, 0);
+    const pace: Pace = parsed.pace === "slow" || parsed.pace === "fast" ? parsed.pace : "mid";
     const next: SaveData = {
       version,
       best: finite(parsed.best),
       bestCombo: finite(parsed.bestCombo),
       bestDistance: finite(parsed.bestDistance),
       muted: Boolean(parsed.muted),
+      pace,
     };
     if (version < 1) {
       next.version = 1;

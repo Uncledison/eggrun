@@ -1,5 +1,7 @@
-import { loadSave, writeSave, type SaveData } from "@/game/save";
+import { loadSave, writeSave, type Pace, type SaveData } from "@/game/save";
 import { resumeAudio, setMuted, sfx, unlockAudio } from "@/game/audio";
+
+export type { Pace };
 
 export type Mode = "menu" | "run" | "pause" | "hitstop" | "tumble" | "over";
 export type DeathReason = "" | "crate" | "beam" | "pit";
@@ -15,9 +17,11 @@ export type Snapshot = {
   speedMult: number;
   newBest: boolean;
   muted: boolean;
+  feet: number;
   airLeft: number;
   sliding: boolean;
   reason: DeathReason;
+  pace: Pace;
 };
 
 declare global {
@@ -32,7 +36,7 @@ const COYOTE = 0.11;
 const BUFFER = 0.13;
 const SLIDE_DUR = 0.56;
 const SLIDE_LOCK = 0.08;
-const MIN_SPEED = 460;
+const PACE_SPEED: Record<Pace, number> = { slow: 340, mid: 460, fast: 620 };
 const MAX_SPEED = 900;
 const RAMP = 23;
 const CHAIN = 2.7;
@@ -147,7 +151,9 @@ export class Runner {
 
   private scroll = 0;
   private speed = 240;
-  private displaySpeed = MIN_SPEED;
+  private displaySpeed = PACE_SPEED.mid;
+  private pace: Pace = "mid";
+  private baseSpeed = PACE_SPEED.mid;
   private runTime = 0;
   private time = 0;
   private px = 220;
@@ -196,6 +202,9 @@ export class Runner {
     this.ctx = canvas.getContext("2d");
     this.onFrame = onFrame;
     this.save = loadSave();
+    this.pace = this.save.pace;
+    this.baseSpeed = PACE_SPEED[this.pace];
+    this.displaySpeed = this.baseSpeed;
     this.muted = this.save.muted;
     this.bestAtStart = this.save.best;
     setMuted(this.muted);
@@ -301,8 +310,8 @@ export class Runner {
     this.reason = "";
     this.newBest = false;
     this.bestAtStart = this.save.best;
-    this.speed = MIN_SPEED;
-    this.displaySpeed = MIN_SPEED;
+    this.speed = this.baseSpeed;
+    this.displaySpeed = this.baseSpeed;
     this.dustAcc = 0;
     this.beatAcc = 0;
     for (const o of this.obstacles) o.alive = false;
@@ -327,6 +336,17 @@ export class Runner {
       this.last = performance.now();
       this.emit();
     }
+  }
+
+  setPace(pace: Pace): void {
+    if (pace !== "slow" && pace !== "mid" && pace !== "fast") return;
+    this.pace = pace;
+    this.baseSpeed = PACE_SPEED[pace];
+    this.save.pace = pace;
+    this.dirty = true;
+    this.persist(true);
+    if (this.mode !== "run") this.displaySpeed = this.baseSpeed;
+    this.emit();
   }
 
   toggleMute(): void {
@@ -433,7 +453,7 @@ export class Runner {
     }
 
     this.runTime += h;
-    this.speed = Math.min(MAX_SPEED, MIN_SPEED + this.runTime * RAMP);
+    this.speed = Math.min(MAX_SPEED, this.baseSpeed + this.runTime * RAMP);
     this.displaySpeed = this.speed;
     this.jumpBuffer = Math.max(0, this.jumpBuffer - h);
     if (this.queued > 0) this.jumpBuffer = BUFFER;
@@ -714,7 +734,7 @@ export class Runner {
       const sx = s.x - this.scroll;
       const dx = sx - this.px;
       const dy = s.y - cy;
-      if (dx * dx + dy * dy > 36 * 36) continue;
+      if (dx * dx + dy * dy > 72 * 72) continue;
       s.alive = false;
       this.combo += 1;
       this.peakCombo = Math.max(this.peakCombo, this.combo);
@@ -728,7 +748,7 @@ export class Runner {
   }
 
   private difficulty(): number {
-    return clamp((this.speed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED), 0, 1);
+    return clamp((this.speed - this.baseSpeed) / (MAX_SPEED - this.baseSpeed), 0, 1);
   }
 
   private gapAfter(kind: Kind): number {
@@ -968,7 +988,7 @@ export class Runner {
 
   private snapshot(): Snapshot {
     const shown = this.mode === "run" ? this.speed : this.displaySpeed;
-    const norm = this.mode === "menu" ? 0.08 : clamp((shown - MIN_SPEED) / (MAX_SPEED - MIN_SPEED), 0, 1);
+    const norm = this.mode === "menu" ? 0.08 : clamp((shown - this.baseSpeed) / (MAX_SPEED - this.baseSpeed), 0, 1);
     return {
       mode: this.mode,
       score: Math.floor(this.score),
@@ -977,13 +997,14 @@ export class Runner {
       peakCombo: this.peakCombo,
       distance: Math.floor(this.distance),
       speedNorm: norm,
-      speedMult: shown / MIN_SPEED,
+      speedMult: shown / this.baseSpeed,
       newBest: this.newBest,
       muted: this.muted,
       feet: this.feet,
       airLeft: this.airLeft,
       sliding: this.slideT > 0 || this.slideBlend > 0.5,
       reason: this.reason,
+      pace: this.pace,
     };
   }
 
@@ -1198,25 +1219,25 @@ export class Runner {
       const y = ground - s.y - bob;
       ctx.beginPath();
       ctx.fillStyle = "rgba(94,224,181,0.28)";
-      ctx.arc(x, y, 14, 0, Math.PI * 2);
+      ctx.arc(x, y, 28, 0, Math.PI * 2);
       ctx.fill();
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(this.time * 2 + s.phase);
       ctx.fillStyle = "#f6f1e7";
       ctx.beginPath();
-      ctx.moveTo(0, -7);
-      ctx.lineTo(4.5, 0);
-      ctx.lineTo(0, 7);
-      ctx.lineTo(-4.5, 0);
+      ctx.moveTo(0, -14);
+      ctx.lineTo(9, 0);
+      ctx.lineTo(0, 14);
+      ctx.lineTo(-9, 0);
       ctx.closePath();
       ctx.fill();
       ctx.fillStyle = "#5ee0b5";
       ctx.beginPath();
-      ctx.moveTo(0, -4);
-      ctx.lineTo(2.4, 0);
-      ctx.lineTo(0, 4);
-      ctx.lineTo(-2.4, 0);
+      ctx.moveTo(0, -8);
+      ctx.lineTo(4.8, 0);
+      ctx.lineTo(0, 8);
+      ctx.lineTo(-4.8, 0);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
@@ -1266,7 +1287,7 @@ export class Runner {
     const blink = !falling && ((cycle > 2.42 && cycle < 2.56) || (cycle > 2.7 && cycle < 2.84));
     const lookY = !this.grounded && this.feet > 6 ? -1.4 : 0;
     const eyes = [
-      { x: 8, y: -3 },
+      { x: -1, y: 2 },
       { x: 22, y: 2 },
     ];
     for (const eye of eyes) {
@@ -1280,24 +1301,24 @@ export class Runner {
       if (falling) {
         ctx.lineWidth = 3.6;
         ctx.beginPath();
-        ctx.moveTo(-3.2, -11);
-        ctx.lineTo(3.2, 11);
-        ctx.moveTo(3.2, -11);
-        ctx.lineTo(-3.2, 11);
+        ctx.moveTo(-6.4, -12);
+        ctx.lineTo(6.4, 12);
+        ctx.moveTo(6.4, -12);
+        ctx.lineTo(-6.4, 12);
         ctx.stroke();
       } else if (blink) {
-        ctx.lineWidth = 3.2;
+        ctx.lineWidth = 3.4;
         ctx.beginPath();
-        ctx.moveTo(-3.6, 0);
-        ctx.lineTo(3.6, 0);
+        ctx.moveTo(-8, 0);
+        ctx.lineTo(8, 0);
         ctx.stroke();
       } else {
         ctx.beginPath();
-        ctx.ellipse(0, 0, 3.15, 11.4, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, 7.4, 13, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = "#f6f1e7";
         ctx.beginPath();
-        ctx.ellipse(1.15, lookY - 0.4, 1.05, 3.1, 0, 0, Math.PI * 2);
+        ctx.ellipse(1.9, -4.1 + lookY, 2.7, 3.2, 0, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
