@@ -24,6 +24,8 @@ export type Snapshot = {
   pace: Pace;
   shields: number;
   flying: boolean;
+  flightLabel: string;
+  title: string;
 };
 
 declare global {
@@ -173,7 +175,10 @@ export class Runner {
   private wingAcc = 0;
   private hundredFlown = false;
   private flying = false;
+  private flightLabel = "";
   private flightT = 0;
+  private title = "";
+  private titleT = 0;
   private flightTarget = 220;
   private flightVy = 0;
   private dayTold = false;
@@ -328,6 +333,7 @@ export class Runner {
   private startFlight(seconds: number): void {
     const fresh = !this.flying;
     this.flying = true;
+    this.flightLabel = seconds >= 10 ? "10초 비행" : "5초 비행";
     this.flightT = Math.max(this.flightT, seconds);
     if (fresh) this.flightTarget = Math.max(this.feet + 90, this.view.h * 0.42);
     this.grounded = false;
@@ -359,7 +365,10 @@ export class Runner {
     this.wingAcc = 0;
     this.hundredFlown = false;
     this.flying = false;
+    this.flightLabel = "";
     this.flightT = 0;
+    this.title = "";
+    this.titleT = 0;
     this.flightVy = 0;
     this.dayTold = false;
     this.tintTier = 0;
@@ -550,6 +559,8 @@ export class Runner {
     if (this.queued > 0) this.jumpBuffer = BUFFER;
     this.slideLock = Math.max(0, this.slideLock - h);
     this.invuln = Math.max(0, this.invuln - h);
+    this.titleT = Math.max(0, this.titleT - h);
+    if (this.titleT === 0) this.title = "";
     if (this.slideT > 0) this.slideT = Math.max(0, this.slideT - h);
     if (!this.grounded) this.coyote = Math.max(0, this.coyote - h);
     if (this.chain > 0) {
@@ -585,6 +596,7 @@ export class Runner {
       this.grounded = false;
       if (this.flightT <= 0) {
         this.flying = false;
+        this.flightLabel = "";
         this.vy = -120;
         this.floater("낙하", this.px, this.view.ground - this.feet - 70, "#f6f1e7");
       }
@@ -644,8 +656,8 @@ export class Runner {
     this.scorePasses();
     this.spawnIfNeeded();
     this.wingAcc += h;
-    if (this.wingAcc >= 3) {
-      this.wingAcc -= 3;
+    if (this.wingAcc >= 7) {
+      this.wingAcc -= 7;
       const peak = (JUMP_V * JUMP_V) / (2 * GRAVITY);
       this.addSpark(this.scroll + this.view.w + 36, peak * 0.96, true);
     }
@@ -1158,6 +1170,8 @@ export class Runner {
       pace: this.pace,
       shields: this.shields,
       flying: this.flying,
+      flightLabel: this.flying ? this.flightLabel : "",
+      title: this.titleT > 0 ? this.title : "",
     };
   }
 
@@ -1172,7 +1186,8 @@ export class Runner {
     while (this.shieldsGiven < earned) {
       this.shieldsGiven += 1;
       this.shields += 1;
-      this.floater("방어막", this.px, this.view.ground - this.feet - 124, "#7ee0c0");
+      this.title = "보호막";
+      this.titleT = 1.8;
       this.puff(12, "#7ee0c0", 0.55);
     }
   }
@@ -1470,40 +1485,27 @@ export class Runner {
 
   private drawWing(ctx: CanvasRenderingContext2D, x: number, y: number, phase: number): void {
     const tw = 0.55 + Math.sin(this.time * 9 + phase) * 0.45;
-    const flap = Math.sin(this.time * 11 + phase) * 0.4;
     ctx.save();
     ctx.translate(x, y);
-    ctx.globalAlpha = 0.28 + tw * 0.35;
-    ctx.fillStyle = "#fff3bf";
+    ctx.globalAlpha = 0.3 + tw * 0.45;
+    ctx.fillStyle = "#ffe56a";
     ctx.beginPath();
-    ctx.arc(0, 0, 26, 0, Math.PI * 2);
+    ctx.arc(0, 0, 24, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
-    ctx.fillStyle = "#f4f8ff";
+    ctx.strokeStyle = "#fffaf0";
+    ctx.lineWidth = 7;
+    ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.ellipse(-10, 8, 14, 9, 0, 0, Math.PI * 2);
-    ctx.ellipse(10, 10, 16, 10, 0, 0, Math.PI * 2);
-    ctx.ellipse(0, 2, 12, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#ffd56a";
-    ctx.save();
-    ctx.translate(-8, -2);
-    ctx.rotate(-0.6 + flap);
-    ctx.beginPath();
-    ctx.ellipse(-14, 0, 16, 6.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-    ctx.save();
-    ctx.translate(8, -2);
-    ctx.rotate(0.6 - flap);
-    ctx.beginPath();
-    ctx.ellipse(14, 0, 16, 6.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    ctx.moveTo(-11, -11);
+    ctx.lineTo(11, 11);
+    ctx.moveTo(11, -11);
+    ctx.lineTo(-11, 11);
+    ctx.stroke();
     for (let i = 0; i < 4; i++) {
       const a = this.time * 4 + phase + i * 1.57;
-      const rr = 18 + (i % 2) * 8;
-      ctx.globalAlpha = 0.35 + tw * 0.65;
+      const rr = 20 + (i % 2) * 7;
+      ctx.globalAlpha = 0.4 + tw * 0.6;
       ctx.fillStyle = i % 2 === 0 ? "#ffffff" : "#ffe56a";
       ctx.fillRect(Math.cos(a) * rr - 1.6, Math.sin(a) * rr - 1.6, 3.2, 3.2);
     }
@@ -1579,27 +1581,33 @@ export class Runner {
     ctx.fill();
 
     ctx.rotate(falling ? spin * 2.1 : clamp(this.flying ? -this.flightVy / 700 : 0, -0.65, 0.45));
-    ctx.scale(sx, sy);
-    ctx.translate(0, -R);
 
     if (this.flying && !falling) {
-      const flap = Math.sin(this.time * 16);
-      const flap2 = Math.sin(this.time * 16 + 0.8);
+      ctx.save();
       ctx.beginPath();
-      ctx.moveTo(-6, -8);
-      ctx.quadraticCurveTo(-34 + flap * 8, 6, -62 + flap2 * 16, 28 + flap * 6);
-      ctx.quadraticCurveTo(-70 + flap * 10, 48, -40 + flap2 * 12, 58);
-      ctx.quadraticCurveTo(-18 + flap * 4, 36, -4, 14);
+      ctx.moveTo(-16, -46);
+      const segments = 8;
+      for (let i = 1; i <= segments; i++) {
+        const t = i / segments;
+        const wave = Math.sin(this.time * 15 - i * 0.75) * (8 + i * 5);
+        ctx.lineTo(-16 - t * 92 + wave, -46 + t * 78 + Math.cos(this.time * 15 - i * 0.5) * 6);
+      }
+      for (let i = segments; i >= 0; i--) {
+        const t = i / segments;
+        const wave = Math.sin(this.time * 15 - i * 0.75) * (8 + i * 5);
+        ctx.lineTo(-4 - t * 78 + wave, -30 + t * 86);
+      }
       ctx.closePath();
-      ctx.fillStyle = "#d7262d";
+      ctx.fillStyle = "#e10600";
       ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(-8, -4);
-      ctx.quadraticCurveTo(-30 + flap2 * 6, 14, -48 + flap * 12, 40);
       ctx.strokeStyle = "#ff5a45";
       ctx.lineWidth = 3;
       ctx.stroke();
+      ctx.restore();
     }
+
+    ctx.scale(sx, sy);
+    ctx.translate(0, -R);
 
     ctx.fillStyle = this.flash > 0.45 && this.mode !== "menu" ? "#ffffff" : this.bodyFill();
     ctx.beginPath();

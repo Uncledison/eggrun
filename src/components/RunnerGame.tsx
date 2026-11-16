@@ -15,6 +15,8 @@ type Hud = {
   pace: Pace;
   shields: number;
   flying: boolean;
+  flightLabel: string;
+  title: string;
 };
 
 const initialHud: Hud = {
@@ -30,6 +32,8 @@ const initialHud: Hud = {
   pace: "mid",
   shields: 0,
   flying: false,
+  flightLabel: "",
+  title: "",
 };
 
 function fmt(n: number): string {
@@ -82,6 +86,8 @@ export function RunnerGame() {
         prev.pace === s.pace &&
         prev.shields === s.shields &&
         prev.flying === s.flying &&
+        prev.flightLabel === s.flightLabel &&
+        prev.title === s.title &&
         prev.score === score &&
         prev.distance === distance
       ) {
@@ -100,6 +106,8 @@ export function RunnerGame() {
         pace: s.pace,
         shields: s.shields,
         flying: s.flying,
+        flightLabel: s.flightLabel,
+        title: s.title,
       };
       hudRef.current = next;
       setHud(next);
@@ -256,8 +264,13 @@ export function RunnerGame() {
         </div>
       ) : null}
       {hud.flying && hud.mode === "run" ? (
-        <p className="pointer-events-none absolute top-24 left-1/2 z-10 w-[min(92vw,22rem)] -translate-x-1/2 rounded-full bg-surface/95 px-4 py-2 text-center text-sm font-semibold text-fg shadow-lg">
-          날개 비행. 손가락을 위아래로 움직이세요
+        <p className="pointer-events-none absolute top-[22%] left-1/2 z-10 -translate-x-1/2 text-center font-display text-6xl leading-none text-white drop-shadow-[0_4px_0_#10141c] sm:text-7xl">
+          {hud.flightLabel || "5초 비행"}
+        </p>
+      ) : null}
+      {hud.title ? (
+        <p className="pointer-events-none absolute top-[34%] left-1/2 z-10 -translate-x-1/2 text-center font-display text-6xl leading-none text-accent drop-shadow-[0_4px_0_#10141c] sm:text-7xl">
+          {hud.title}
         </p>
       ) : null}
       {coach && hud.mode === "run" && !hud.flying ? (
