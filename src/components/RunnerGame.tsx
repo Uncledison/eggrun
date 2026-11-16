@@ -308,12 +308,7 @@ export function RunnerGame() {
       ) : null}
 
       {hud.mode === "over" ? (
-        <div
-          className="absolute inset-0 z-20 flex items-end justify-center bg-bg/45 p-4 sm:items-center"
-          onPointerDown={(e) => {
-            if (e.target === e.currentTarget) engineRef.current?.begin();
-          }}
-        >
+        <div className="absolute inset-0 z-20 flex items-end justify-center bg-bg/45 p-4 sm:items-center">
           <section
             className="panel-in safe-b w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-2xl"
             role="status"
@@ -340,9 +335,16 @@ export function RunnerGame() {
               onClick={() => engineRef.current?.begin()}
             >
               <RotateCcw className="size-5" aria-hidden="true" />
-              다시 달리기
+              다시 시도
             </button>
-            <p className="mt-3 text-center text-xs text-muted">크게 부딪히면 그 판은 끝입니다. 스페이스로 다시 달립니다.</p>
+            <button
+              type="button"
+              className="mt-2 h-12 w-full rounded-xl border border-border bg-bg text-base font-semibold text-fg"
+              onClick={() => engineRef.current?.toMenu()}
+            >
+              레벨 선택
+            </button>
+            <p className="mt-3 text-center text-xs text-muted">다시 시도는 같은 속도입니다. 레벨 선택에서 느리게를 고를 수 있습니다.</p>
           </section>
         </div>
       ) : null}

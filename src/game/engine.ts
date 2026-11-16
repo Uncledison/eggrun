@@ -353,6 +353,28 @@ export class Runner {
     }
   }
 
+  toMenu(): void {
+    if (this.mode !== "over") return;
+    this.mode = "menu";
+    this.score = 0;
+    this.scoreAcc = 0;
+    this.combo = 0;
+    this.distance = 0;
+    this.feet = 0;
+    this.vy = 0;
+    this.grounded = true;
+    this.reason = "";
+    this.shields = 0;
+    this.invuln = 0;
+    this.trauma = 0;
+    this.flash = 0;
+    for (const o of this.obstacles) o.alive = false;
+    for (const s of this.sparks) s.alive = false;
+    this.lastKind = "";
+    this.nextX = this.scroll + this.view.w * 0.98;
+    this.emit();
+  }
+
   setPace(pace: Pace): void {
     if (pace !== "slow" && pace !== "mid" && pace !== "fast") return;
     this.pace = pace;
