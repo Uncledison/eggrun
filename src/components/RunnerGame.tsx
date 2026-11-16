@@ -257,7 +257,7 @@ export function RunnerGame() {
       ) : null}
       {hud.flying && hud.mode === "run" ? (
         <p className="pointer-events-none absolute top-24 left-1/2 z-10 w-[min(92vw,22rem)] -translate-x-1/2 rounded-full bg-surface/95 px-4 py-2 text-center text-sm font-semibold text-fg shadow-lg">
-          5초 비행. 손가락을 위아래로 움직이세요
+          날개 비행. 손가락을 위아래로 움직이세요
         </p>
       ) : null}
       {coach && hud.mode === "run" && !hud.flying ? (

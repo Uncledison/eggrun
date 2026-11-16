@@ -64,7 +64,7 @@ type Obs = {
   near: boolean;
 };
 
-type Spark = { alive: boolean; x: number; y: number; phase: number };
+type Spark = { alive: boolean; x: number; y: number; phase: number; wing: boolean };
 type Particle = {
   alive: boolean;
   x: number;
@@ -114,7 +114,7 @@ function makeObs(): Obs {
   return { alive: false, kind: "low", x: 0, w: 0, h: 0, thick: 36, scored: false, near: false };
 }
 function makeSpark(): Spark {
-  return { alive: false, x: 0, y: 0, phase: 0 };
+  return { alive: false, x: 0, y: 0, phase: 0, wing: false };
 }
 function makeParticle(): Particle {
   return { alive: false, x: 0, y: 0, vx: 0, vy: 0, g: 0, life: 0, max: 1, size: 3, color: "#fff", front: false };
@@ -170,7 +170,8 @@ export class Runner {
   private shieldsGiven = 0;
   private invuln = 0;
   private lastWeather: "clear" | "wind" | "rain" | "snow" = "clear";
-  private flightMarks = 0;
+  private wingAcc = 0;
+  private hundredFlown = false;
   private flying = false;
   private flightT = 0;
   private flightTarget = 220;
@@ -319,15 +320,19 @@ export class Runner {
   }
 
   private checkFlight(): void {
-    const mark = Math.floor(this.score / 10000);
-    if (mark <= this.flightMarks) return;
-    this.flightMarks = mark;
+    if (this.hundredFlown || this.score < 100000) return;
+    this.hundredFlown = true;
+    this.startFlight(10);
+  }
+
+  private startFlight(seconds: number): void {
+    const fresh = !this.flying;
     this.flying = true;
-    this.flightT = 5;
-    this.flightTarget = Math.max(this.feet + 80, this.view.h * 0.4);
+    this.flightT = Math.max(this.flightT, seconds);
+    if (fresh) this.flightTarget = Math.max(this.feet + 90, this.view.h * 0.42);
     this.grounded = false;
     this.queued = 0;
-    this.floater("비행", this.px, this.view.ground - this.feet - 110, "#9fd4ff");
+    this.floater(seconds >= 10 ? "10초 비행" : "5초 비행", this.px, this.view.ground - this.feet - 110, "#9fd4ff");
   }
 
   begin(): void {
@@ -351,7 +356,8 @@ export class Runner {
     this.shieldsGiven = 0;
     this.invuln = 0;
     this.lastWeather = "clear";
-    this.flightMarks = 0;
+    this.wingAcc = 0;
+    this.hundredFlown = false;
     this.flying = false;
     this.flightT = 0;
     this.flightVy = 0;
@@ -637,6 +643,12 @@ export class Runner {
     this.collectSparks();
     this.scorePasses();
     this.spawnIfNeeded();
+    this.wingAcc += h;
+    if (this.wingAcc >= 3) {
+      this.wingAcc -= 3;
+      const peak = (JUMP_V * JUMP_V) / (2 * GRAVITY);
+      this.addSpark(this.scroll + this.view.w + 36, peak * 0.96, true);
+    }
     this.recycle();
     if (this.grounded && this.slideT <= 0) this.spawnDust(h, 1);
     this.beatAcc += h;
@@ -867,6 +879,7 @@ export class Runner {
       const dy = s.y - cy;
       if (dx * dx + dy * dy > 72 * 72) continue;
       s.alive = false;
+      if (s.wing) this.startFlight(5);
       this.combo += 1;
       this.peakCombo = Math.max(this.peakCombo, this.combo);
       this.chain = CHAIN;
@@ -956,12 +969,13 @@ export class Runner {
     }
   }
 
-  private addSpark(x: number, y: number): void {
+  private addSpark(x: number, y: number, wing = false): void {
     const s = this.alloc(this.sparks, makeSpark);
     s.alive = true;
     s.x = x;
     s.y = y;
     s.phase = Math.random() * Math.PI * 2;
+    s.wing = wing;
   }
 
   private recycle(): void {
@@ -1454,6 +1468,48 @@ export class Runner {
     }
   }
 
+  private drawWing(ctx: CanvasRenderingContext2D, x: number, y: number, phase: number): void {
+    const tw = 0.55 + Math.sin(this.time * 9 + phase) * 0.45;
+    const flap = Math.sin(this.time * 11 + phase) * 0.4;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.globalAlpha = 0.28 + tw * 0.35;
+    ctx.fillStyle = "#fff3bf";
+    ctx.beginPath();
+    ctx.arc(0, 0, 26, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#f4f8ff";
+    ctx.beginPath();
+    ctx.ellipse(-10, 8, 14, 9, 0, 0, Math.PI * 2);
+    ctx.ellipse(10, 10, 16, 10, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 2, 12, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffd56a";
+    ctx.save();
+    ctx.translate(-8, -2);
+    ctx.rotate(-0.6 + flap);
+    ctx.beginPath();
+    ctx.ellipse(-14, 0, 16, 6.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(8, -2);
+    ctx.rotate(0.6 - flap);
+    ctx.beginPath();
+    ctx.ellipse(14, 0, 16, 6.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    for (let i = 0; i < 4; i++) {
+      const a = this.time * 4 + phase + i * 1.57;
+      const rr = 18 + (i % 2) * 8;
+      ctx.globalAlpha = 0.35 + tw * 0.65;
+      ctx.fillStyle = i % 2 === 0 ? "#ffffff" : "#ffe56a";
+      ctx.fillRect(Math.cos(a) * rr - 1.6, Math.sin(a) * rr - 1.6, 3.2, 3.2);
+    }
+    ctx.restore();
+  }
+
   private drawSparks(ctx: CanvasRenderingContext2D): void {
     const ground = this.view.ground;
     for (const s of this.sparks) {
@@ -1461,6 +1517,10 @@ export class Runner {
       const x = s.x - this.scroll;
       const bob = Math.sin(this.time * 5 + s.phase) * 4;
       const y = ground - s.y - bob;
+      if (s.wing) {
+        this.drawWing(ctx, x, y, s.phase);
+        continue;
+      }
       ctx.beginPath();
       ctx.fillStyle = "rgba(94,224,181,0.28)";
       ctx.arc(x, y, 28, 0, Math.PI * 2);
