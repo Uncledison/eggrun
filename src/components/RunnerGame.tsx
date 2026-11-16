@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { loadLastName, loadRanks, recordRank, shareScore, type RankEntry } from "@/game/ranks";
 import { ArrowDown, ArrowUp, Pause, RotateCcw, Trophy, Volume2, VolumeX, Zap } from "lucide-react";
 import { Runner, type DeathReason, type Mode, type Pace, type Snapshot } from "@/game/engine";
 
@@ -57,6 +58,9 @@ export function RunnerGame() {
   const barRef = useRef<HTMLSpanElement>(null);
   const [hud, setHud] = useState<Hud>(initialHud);
   const [coach, setCoach] = useState(false);
+  const [ranks, setRanks] = useState<RankEntry[]>([]);
+  const [runnerName, setRunnerName] = useState("");
+  const [shareNote, setShareNote] = useState("");
   const hudRef = useRef(hud);
   const modeRef = useRef(hud.mode);
   hudRef.current = hud;
@@ -183,6 +187,15 @@ export function RunnerGame() {
     const timer = window.setTimeout(() => setCoach(false), 3800);
     return () => window.clearTimeout(timer);
   }, [hud.mode]);
+
+  useEffect(() => {
+    setRanks(loadRanks());
+    setRunnerName(loadLastName());
+  }, []);
+
+  useEffect(() => {
+    if (hud.mode === "over") setShareNote("");
+  }, [hud.mode, hud.score]);
 
   const playing = hud.mode === "run" || hud.mode === "hitstop" || hud.mode === "tumble";
 
@@ -365,6 +378,51 @@ export function RunnerGame() {
                 <dd className="mt-1 text-lg font-semibold text-gold">{fmt(hud.best)}</dd>
               </div>
             </dl>
+            <form
+              className="mt-4 flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setRanks(recordRank(runnerName, hud.score));
+                setRunnerName(loadLastName());
+                setShareNote("이 기기의 순위에 남겼습니다");
+              }}
+            >
+              <input
+                value={runnerName}
+                onChange={(e) => setRunnerName(e.target.value.slice(0, 8))}
+                placeholder="이니셜"
+                maxLength={8}
+                className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-bg px-3 text-base text-fg"
+                aria-label="이름 또는 이니셜"
+              />
+              <button type="submit" className="h-11 shrink-0 rounded-xl bg-bg px-3 text-sm font-semibold text-fg">
+                기록
+              </button>
+            </form>
+            {ranks.length > 0 ? (
+              <ol className="mt-3 space-y-1">
+                {ranks.slice(0, 5).map((row, i) => (
+                  <li key={`${row.name}-${row.at}`} className="flex items-center justify-between text-sm">
+                    <span className="text-muted">
+                      {i + 1}. {row.name}
+                    </span>
+                    <span className="font-semibold text-fg">{fmt(row.score)}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+            <button
+              type="button"
+              className="mt-3 h-11 w-full rounded-xl border border-border text-sm font-semibold text-fg"
+              onClick={() => {
+                void shareScore(runnerName, hud.score).then((result) => {
+                  setShareNote(result === "copied" ? "점수를 복사했습니다" : result === "shared" ? "공유했습니다" : "");
+                });
+              }}
+            >
+              점수 공유
+            </button>
+            {shareNote ? <p className="mt-2 text-center text-xs text-accent">{shareNote}</p> : null}
             <button
               type="button"
               className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-lg font-semibold text-on-primary"
