@@ -1585,19 +1585,15 @@ export class Runner {
 
     if (this.flying && !falling) {
       ctx.save();
-      ctx.translate(0, -36);
-      ctx.fillStyle = "rgba(255, 214, 70, 0.28)";
-      ctx.beginPath();
-      ctx.arc(0, 4, 58, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.translate(0, -40);
       ctx.fillStyle = "#ffe14a";
       ctx.beginPath();
-      ctx.moveTo(22, -52);
-      ctx.lineTo(-8, -6);
-      ctx.lineTo(14, -6);
-      ctx.lineTo(-26, 52);
-      ctx.lineTo(8, 2);
-      ctx.lineTo(-16, 2);
+      ctx.moveTo(16, -36);
+      ctx.lineTo(-6, -4);
+      ctx.lineTo(10, -4);
+      ctx.lineTo(-18, 36);
+      ctx.lineTo(6, 2);
+      ctx.lineTo(-12, 2);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
@@ -1605,6 +1601,14 @@ export class Runner {
 
     ctx.scale(sx, sy);
     ctx.translate(0, -R);
+
+    const pulse = Math.sin(this.time * 2.1) * 0.5 + 0.5;
+    const flicker = Math.pow(Math.abs(Math.sin(this.time * 16)), 1.4);
+    ctx.save();
+    ctx.scale(1 / sx, 1 / sy);
+    if (this.shields > 0 && !falling) this.drawNeon(ctx, "126,224,192", R + 16, pulse, flicker, "glow");
+    if (this.flying && !falling) this.drawNeon(ctx, "255,220,70", R + 52, pulse, flicker, "glow");
+    ctx.restore();
 
     ctx.fillStyle = this.flash > 0.45 && this.mode !== "menu" ? "#ffffff" : this.bodyFill();
     ctx.beginPath();
@@ -1614,16 +1618,13 @@ export class Runner {
     if (this.shields > 0 && !falling) {
       ctx.save();
       ctx.scale(1 / sx, 1 / sy);
-      const pulse = 0.35 + (Math.sin(this.time * 3.2) * 0.5 + 0.5) * 0.65;
-      ctx.beginPath();
-      ctx.fillStyle = `rgba(126,224,192,${0.08 + pulse * 0.16})`;
-      ctx.arc(0, 0, R + 28, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.lineWidth = 6;
-      ctx.strokeStyle = `rgba(214,255,240,${0.35 + pulse * 0.65})`;
-      ctx.arc(0, 0, R + 22, 0, Math.PI * 2);
-      ctx.stroke();
+      this.drawNeon(ctx, "126,224,192", R + 16, pulse, Math.abs(Math.sin(this.time * 13)), "line");
+      ctx.restore();
+    }
+    if (this.flying && !falling) {
+      ctx.save();
+      ctx.scale(1 / sx, 1 / sy);
+      this.drawNeon(ctx, "255,220,70", R + 52, pulse, flicker, "line");
       ctx.restore();
     }
 
@@ -1667,6 +1668,43 @@ export class Runner {
       }
       ctx.restore();
     }
+    ctx.restore();
+  }
+
+  private drawNeon(
+    ctx: CanvasRenderingContext2D,
+    rgb: string,
+    lineR: number,
+    pulse: number,
+    flicker: number,
+    part: "glow" | "line",
+  ): void {
+    const spread = 26 + pulse * 42;
+    const outer = lineR + spread;
+    if (part === "glow") {
+      const g = ctx.createRadialGradient(0, 0, lineR * 0.2, 0, 0, outer);
+      g.addColorStop(0, `rgba(${rgb},${0.62 + pulse * 0.28})`);
+      g.addColorStop(0.42, `rgba(${rgb},0.22)`);
+      g.addColorStop(0.78, `rgba(${rgb},0.08)`);
+      g.addColorStop(1, `rgba(${rgb},${0.01 + flicker * 0.18})`);
+      ctx.beginPath();
+      ctx.fillStyle = g;
+      ctx.arc(0, 0, outer, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+    ctx.beginPath();
+    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = `rgba(${rgb},0.95)`;
+    ctx.arc(0, 0, lineR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.save();
+    ctx.globalAlpha = 0.12 + flicker * 0.88;
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(${rgb},1)`;
+    ctx.arc(0, 0, outer, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 
