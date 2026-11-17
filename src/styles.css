@@ -15,6 +15,9 @@
   --radius: 1rem;
 }
 
+@custom-variant short (@media (orientation: landscape) and (max-height: 520px));
+@custom-variant tall (@media (min-width: 640px) and (min-height: 540px));
+
 @layer base {
   button:not(:disabled),
   [role="button"]:not(:disabled) {

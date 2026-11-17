@@ -300,14 +300,14 @@ export function RunnerGame() {
       ) : null}
 
       {hud.mode === "menu" ? (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-end p-3 sm:p-10">
-          <section className="panel-in pointer-events-auto max-h-[calc(100dvh-1.5rem)] w-[min(220px,58vw)] overflow-y-auto rounded-2xl border border-border bg-surface/95 p-3 shadow-2xl backdrop-blur-md sm:w-full sm:max-w-md sm:p-6">
-            <p className="text-[10px] font-semibold tracking-widest text-primary sm:text-xs">ENDLESS ROOFTOP</p>
-            <h1 className="font-display mt-1 text-3xl leading-none text-fg sm:text-5xl">에그런</h1>
-            <p className="mt-3 hidden text-sm leading-relaxed text-muted sm:block">
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-end p-3 short:p-2 tall:p-10">
+          <section className="panel-in pointer-events-auto max-h-[calc(100dvh-0.5rem)] w-[min(340px,52vw)] overflow-hidden rounded-2xl border border-border bg-surface/95 p-2.5 shadow-2xl backdrop-blur-md tall:w-full tall:max-w-md tall:overflow-y-auto tall:p-6">
+            <p className="text-[10px] font-semibold tracking-widest text-primary tall:text-xs">ENDLESS ROOFTOP</p>
+            <h1 className="font-display text-3xl leading-none text-fg tall:mt-1 tall:text-5xl">에그런</h1>
+            <p className="mt-3 hidden text-sm leading-relaxed text-muted tall:block">
               상자는 점프, 머리 위 표지판은 슬라이드. 번개를 먹으면 3초 비행. 보호막은 2만 점마다 하나.
             </p>
-            <dl className="mt-4 hidden grid-cols-3 gap-2 text-center sm:grid">
+            <dl className="mt-4 hidden grid-cols-3 gap-2 text-center tall:grid">
               <div className="rounded-xl bg-bg px-2 py-3">
                 <ArrowUp className="mx-auto size-4 text-primary" aria-hidden="true" />
                 <dt className="mt-1 text-sm font-semibold text-fg">점프</dt>
@@ -324,19 +324,19 @@ export function RunnerGame() {
                 <dd className="text-xs text-muted">연속 회피</dd>
               </div>
             </dl>
-            <p className="mt-3 hidden text-sm text-muted sm:block">
+            <p className="mt-3 hidden text-sm text-muted tall:block">
               최고 기록 <span className="font-semibold text-gold">{fmt(hud.best)}</span>
             </p>
-            <div className="mt-3 rounded-xl border border-gold/40 bg-gold/15 px-2.5 py-2 sm:px-3 sm:py-3">
-              <p className="text-sm font-semibold tracking-wide text-gold">전체 순위</p>
+            <div className="mt-2 rounded-xl border border-gold/40 bg-gold/15 px-2.5 py-1.5 tall:mt-3 tall:px-3 tall:py-3">
+              <p className="text-xs font-semibold tracking-wide text-gold tall:text-sm">전체 순위</p>
               {ranks.length > 0 ? (
-                <ol className="mt-2 space-y-1.5">
+                <ol className="mt-1 space-y-0.5 tall:mt-2 tall:space-y-1.5">
                   {ranks.slice(0, 5).map((row, i) => (
-                    <li key={row.name} className="flex items-center justify-between text-sm">
-                      <span className={i === 0 ? "text-base font-bold text-gold" : "font-medium text-fg"}>
+                    <li key={row.name} className={`flex items-center justify-between text-xs tall:text-sm ${i > 2 ? "hidden tall:flex" : ""}`}>
+                      <span className={i === 0 ? "font-bold text-gold tall:text-base" : "font-medium text-fg"}>
                         {i + 1}. {row.name}
                       </span>
-                      <span className={i === 0 ? "text-base font-bold text-gold" : "font-semibold text-fg"}>{fmt(row.score)}</span>
+                      <span className={i === 0 ? "font-bold text-gold tall:text-base" : "font-semibold text-fg"}>{fmt(row.score)}</span>
                     </li>
                   ))}
                 </ol>
@@ -344,7 +344,7 @@ export function RunnerGame() {
                 <p className="mt-1 text-sm text-muted">아직 기록이 없습니다</p>
               )}
             </div>
-            <div className="mt-3 grid grid-cols-3 gap-1.5 sm:mt-4 sm:gap-2" role="group" aria-label="시작 속도">
+            <div className="mt-2 grid grid-cols-3 gap-1.5 tall:mt-4 tall:gap-2" role="group" aria-label="시작 속도">
               {(
                 [
                   ["slow", "느리게"],
@@ -355,7 +355,7 @@ export function RunnerGame() {
                 <button
                   key={id}
                   type="button"
-                  className={`h-9 rounded-lg text-xs font-semibold sm:h-11 sm:rounded-xl sm:text-sm ${
+                  className={`h-8 rounded-lg text-xs font-semibold tall:h-11 tall:rounded-xl tall:text-sm ${
                     hud.pace === id ? "bg-gold text-bg" : "bg-bg text-fg"
                   }`}
                   onPointerDown={(e) => e.stopPropagation()}
@@ -367,7 +367,7 @@ export function RunnerGame() {
             </div>
             <button
               type="button"
-              className="mt-2 h-11 w-full rounded-xl bg-primary text-base font-semibold text-on-primary sm:mt-4 sm:h-14 sm:text-lg"
+              className="mt-1.5 h-9 w-full rounded-xl bg-primary text-sm font-semibold text-on-primary tall:mt-4 tall:h-14 tall:text-lg"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => engineRef.current?.begin()}
             >
@@ -378,103 +378,108 @@ export function RunnerGame() {
       ) : null}
 
       {hud.mode === "over" ? (
-        <div className="absolute inset-0 z-20 flex items-end justify-center bg-bg/45 p-4 sm:items-center">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-bg/45 p-2 short:p-2 sm:p-4">
           <section
-            className="panel-in safe-b w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-2xl"
+            className="panel-in safe-b max-h-[calc(100dvh-0.5rem)] w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-2xl short:max-w-[min(720px,96vw)] short:p-2.5 tall:p-6"
             role="status"
           >
-            <p className="text-sm font-medium text-primary">{hud.newBest ? "새로운 최고 기록" : reasonCopy(hud.reason)}</p>
-            <h2 className="font-display mt-1 text-6xl leading-none text-fg">{fmt(hud.score)}</h2>
-            <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-xl bg-bg px-2 py-3">
-                <dt className="text-xs text-muted">거리</dt>
-                <dd className="mt-1 text-lg font-semibold text-fg">{fmt(hud.distance)}m</dd>
+            <div className="short:grid short:grid-cols-2 short:items-center short:gap-3">
+              <div>
+                <p className="text-sm font-medium text-primary">{hud.newBest ? "새로운 최고 기록" : reasonCopy(hud.reason)}</p>
+                <h2 className="font-display mt-1 text-5xl leading-none text-fg short:mt-0 short:text-4xl tall:text-6xl">{fmt(hud.score)}</h2>
+                <dl className="mt-3 grid grid-cols-3 gap-2 text-center short:mt-2 short:gap-1.5 tall:mt-4">
+                  <div className="rounded-xl bg-bg px-2 py-2 short:px-1.5 short:py-1 tall:py-3">
+                    <dt className="text-xs text-muted">거리</dt>
+                    <dd className="mt-0.5 text-base font-semibold text-fg short:text-sm tall:text-lg">{fmt(hud.distance)}m</dd>
+                  </div>
+                  <div className="rounded-xl bg-bg px-2 py-2 short:px-1.5 short:py-1 tall:py-3">
+                    <dt className="text-xs text-muted">최고 콤보</dt>
+                    <dd className="mt-0.5 text-base font-semibold text-accent short:text-sm tall:text-lg">{hud.peakCombo}</dd>
+                  </div>
+                  <div className="rounded-xl bg-bg px-2 py-2 short:px-1.5 short:py-1 tall:py-3">
+                    <dt className="text-xs text-muted">최고 점수</dt>
+                    <dd className="mt-0.5 text-base font-semibold text-gold short:text-sm tall:text-lg">{fmt(hud.best)}</dd>
+                  </div>
+                </dl>
+                <form
+                  className="mt-3 flex gap-2 short:mt-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    recordRank(runnerName, hud.score);
+                    setRunnerName(loadLastName());
+                    void submitRank({ data: { name: runnerName, score: hud.score } })
+                      .then((rows) => {
+                        setRanks(rows);
+                        setShareNote("전체 순위에 남겼습니다");
+                        trackEvent("score_submit", { score: Math.floor(hud.score), success: true });
+                      })
+                      .catch((err: unknown) => {
+                        const message = err instanceof Error ? err.message : "";
+                        setShareNote(message || "서버에 연결되지 않아 이 기기에만 남겼습니다");
+                        trackEvent("score_submit", { score: Math.floor(hud.score), success: false });
+                      });
+                  }}
+                >
+                  <input
+                    value={runnerName}
+                    onChange={(e) => setRunnerName(e.target.value.slice(0, 12))}
+                    placeholder="이니셜"
+                    className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-bg px-3 text-base text-fg short:h-9"
+                    aria-label="이름 또는 이니셜"
+                  />
+                  <button type="submit" className="h-11 shrink-0 rounded-xl bg-bg px-3 text-sm font-semibold text-fg short:h-9">
+                    기록
+                  </button>
+                </form>
               </div>
-              <div className="rounded-xl bg-bg px-2 py-3">
-                <dt className="text-xs text-muted">최고 콤보</dt>
-                <dd className="mt-1 text-lg font-semibold text-accent">{hud.peakCombo}</dd>
+              <div>
+                {ranks.length > 0 ? (
+                  <ol className="mt-3 space-y-1 short:mt-0 short:space-y-0.5">
+                    <li className="text-xs font-semibold text-muted">전체 순위</li>
+                    {ranks.slice(0, 5).map((row, i) => (
+                      <li key={row.name} className={`flex items-center justify-between text-sm short:text-xs ${i > 2 ? "hidden tall:flex" : ""}`}>
+                        <span className="text-muted">
+                          {i + 1}. {row.name}
+                        </span>
+                        <span className="font-semibold text-fg">{fmt(row.score)}</span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
+                <button
+                  type="button"
+                  className="mt-3 h-11 w-full rounded-xl border border-border text-sm font-semibold text-fg short:mt-2 short:h-9"
+                  onClick={() => {
+                    void shareScore(runnerName, hud.score).then((result) => {
+                      setShareNote(result === "copied" ? "링크를 복사했습니다" : result === "shared" ? "카톡 공유를 열었습니다" : "");
+                      trackEvent("share", {
+                        method: "kakao",
+                        result,
+                        score: Math.floor(hud.score),
+                      });
+                    });
+                  }}
+                >
+                  카톡으로 공유
+                </button>
+                {shareNote ? <p className="mt-1 text-center text-xs text-accent">{shareNote}</p> : null}
+                <button
+                  type="button"
+                  className="mt-3 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-lg font-semibold text-on-primary short:mt-1.5 short:h-10 short:text-base"
+                  onClick={() => engineRef.current?.begin()}
+                >
+                  <RotateCcw className="size-4 sm:size-5" aria-hidden="true" />
+                  다시 시도
+                </button>
+                <button
+                  type="button"
+                  className="mt-2 h-12 w-full rounded-xl border border-border bg-bg text-base font-semibold text-fg short:mt-1.5 short:h-9 short:text-sm"
+                  onClick={() => engineRef.current?.toMenu()}
+                >
+                  레벨 선택
+                </button>
               </div>
-              <div className="rounded-xl bg-bg px-2 py-3">
-                <dt className="text-xs text-muted">최고 점수</dt>
-                <dd className="mt-1 text-lg font-semibold text-gold">{fmt(hud.best)}</dd>
-              </div>
-            </dl>
-            <form
-              className="mt-4 flex gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                recordRank(runnerName, hud.score);
-                setRunnerName(loadLastName());
-                void submitRank({ data: { name: runnerName, score: hud.score } })
-                  .then((rows) => {
-                    setRanks(rows);
-                    setShareNote("전체 순위에 남겼습니다");
-                    trackEvent("score_submit", { score: Math.floor(hud.score), success: true });
-                  })
-                  .catch((err: unknown) => {
-                    const message = err instanceof Error ? err.message : "";
-                    setShareNote(message || "서버에 연결되지 않아 이 기기에만 남겼습니다");
-                    trackEvent("score_submit", { score: Math.floor(hud.score), success: false });
-                  });
-              }}
-            >
-              <input
-                value={runnerName}
-                onChange={(e) => setRunnerName(e.target.value.slice(0, 12))}
-                placeholder="이니셜"
-                className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-bg px-3 text-base text-fg"
-                aria-label="이름 또는 이니셜"
-              />
-              <button type="submit" className="h-11 shrink-0 rounded-xl bg-bg px-3 text-sm font-semibold text-fg">
-                기록
-              </button>
-            </form>
-            {ranks.length > 0 ? (
-              <ol className="mt-3 space-y-1">
-                <li className="text-xs font-semibold text-muted">전체 순위</li>
-                {ranks.slice(0, 5).map((row, i) => (
-                  <li key={row.name} className="flex items-center justify-between text-sm">
-                    <span className="text-muted">
-                      {i + 1}. {row.name}
-                    </span>
-                    <span className="font-semibold text-fg">{fmt(row.score)}</span>
-                  </li>
-                ))}
-              </ol>
-            ) : null}
-            <button
-              type="button"
-              className="mt-3 h-11 w-full rounded-xl border border-border text-sm font-semibold text-fg"
-              onClick={() => {
-                void shareScore(runnerName, hud.score).then((result) => {
-                  setShareNote(result === "copied" ? "링크를 복사했습니다" : result === "shared" ? "카톡 공유를 열었습니다" : "");
-                  trackEvent("share", {
-                    method: "kakao",
-                    result,
-                    score: Math.floor(hud.score),
-                  });
-                });
-              }}
-            >
-              카톡으로 공유
-            </button>
-            {shareNote ? <p className="mt-2 text-center text-xs text-accent">{shareNote}</p> : null}
-            <button
-              type="button"
-              className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-lg font-semibold text-on-primary"
-              onClick={() => engineRef.current?.begin()}
-            >
-              <RotateCcw className="size-5" aria-hidden="true" />
-              다시 시도
-            </button>
-            <button
-              type="button"
-              className="mt-2 h-12 w-full rounded-xl border border-border bg-bg text-base font-semibold text-fg"
-              onClick={() => engineRef.current?.toMenu()}
-            >
-              레벨 선택
-            </button>
-
+            </div>
           </section>
         </div>
       ) : null}
