@@ -16,9 +16,12 @@ export const Route = createRootRoute({
         content: "점프와 슬라이드로 옥상 위를 달리는 엔드리스 러너. 콤보, 가속, 최고 기록.",
       },
       { name: "theme-color", content: "#10141c" },
+      { name: "apple-mobile-web-app-title", content: APP_NAME },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/__grok/icon-192.png" },
+      { rel: "icon", type: "image/png", sizes: "512x512", href: "/__grok/icon-512.png" },
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/__grok/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/__grok/icon-180.png" },

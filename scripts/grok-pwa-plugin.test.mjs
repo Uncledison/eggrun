@@ -105,7 +105,7 @@ test("does not duplicate x:creator tags", () => {
 test("platform chrome overwrites share-card metas and always sets og:title", () => {
   const html =
     '<html><head><title>Hello World</title><meta property="og:title" content="Old"><meta name="twitter:card" content="summary"></head></html>';
-  const out = injectGrokPwaHead(html, { appName: "Wild Race" });
+  const out = injectGrokPwaHead(html, { appName: "Wild Race", site: {} });
   assert.match(out, /name="twitter:card" content="summary_large_image"/);
   assert.match(out, /property="og:title" content="Hello World"/);
   assert.doesNotMatch(out, /content="Old"/);
@@ -246,6 +246,7 @@ test("site title Grok App is a real name, not a sentinel", () => {
 test("published grok.me slug is still a title fallback", () => {
   const out = injectGrokPwaHead("<html><head></head></html>", {
     host: "wild-race.grok.me",
+    site: {},
   });
   assert.match(out, /property="og:title" content="Wild Race"/);
 });
@@ -303,10 +304,14 @@ test("vercel Host without a public hostname emits no og:image", () => {
 });
 
 test("emits og:image for a public host and prefers a custom card", () => {
+  // Empty workspace: this app's own public/og.jpg must not leak into the
+  // placeholder (no custom card) half of the test.
+  const empty = mkdtempSync(join(tmpdir(), "grok-og-placeholder-"));
   const placeholder = injectGrokPwaHead("<html><head></head></html>", {
     appName: "Wild Race",
     host: "wild-race.grok.me",
     site: { title: "Wild Race" },
+    cwd: empty,
   });
   assert.match(
     placeholder,
@@ -318,15 +323,18 @@ test("emits og:image for a public host and prefers a custom card", () => {
     appName: "Wild Race",
     host: "wild-race.grok.me",
     site: { title: "Wild Race", card: "custom", type: "x:game" },
+    cwd: empty,
   });
   assert.match(custom, /property="og:image" content="https:\/\/wild-race\.grok\.me\/og\.jpg"/);
   assert.match(custom, /property="og:type" content="x:game"/);
 });
 
 test("placeholder og:image appends site.color when it is 6-digit hex", () => {
+  const empty = mkdtempSync(join(tmpdir(), "grok-og-color-"));
   const themed = injectGrokPwaHead("<html><head></head></html>", {
     host: "wild-race.grok.me",
     site: { title: "Wild Race", color: "#FF4D2E" },
+    cwd: empty,
   });
   assert.match(
     themed,
@@ -336,12 +344,14 @@ test("placeholder og:image appends site.color when it is 6-digit hex", () => {
   const invalid = injectGrokPwaHead("<html><head></head></html>", {
     host: "wild-race.grok.me",
     site: { title: "Wild Race", color: "red" },
+    cwd: empty,
   });
   assert.doesNotMatch(invalid, /color=/);
 
   const custom = injectGrokPwaHead("<html><head></head></html>", {
     host: "wild-race.grok.me",
     site: { title: "Wild Race", card: "custom", color: "FF4D2E" },
+    cwd: empty,
   });
   assert.doesNotMatch(custom, /color=/);
 });
@@ -349,6 +359,7 @@ test("placeholder og:image appends site.color when it is 6-digit hex", () => {
 test("document title entities are not double-escaped on og:title", () => {
   const out = injectGrokPwaHead(
     "<html><head><title>Cats &amp; Dogs</title></head></html>",
+    { site: {} },
   );
   assert.match(out, /property="og:title" content="Cats &amp; Dogs"/);
   assert.doesNotMatch(out, /Cats &amp;amp; Dogs/);
@@ -363,14 +374,14 @@ test("site.json title wins over the host slug", () => {
 });
 
 test("injects into documents with no head element", () => {
-  const out = injectGrokPwaHead("<html><body>hi</body></html>", { appName: "Solo" });
+  const out = injectGrokPwaHead("<html><body>hi</body></html>", { appName: "Solo", site: {} });
   assert.match(out, /<head>/);
   assert.match(out, /property="og:title" content="Solo"/);
   assert.match(out, /<\/head>/);
 });
 
 test("streaming injector matches </HEAD> case-insensitively", () => {
-  const injector = createHeadInjector({ appName: "Wild Race" });
+  const injector = createHeadInjector({ appName: "Wild Race", site: {} });
   const chunks = [
     ...injector.push("<html><HEAD><title>x</title></HE"),
     ...injector.push("AD><body>hello</body></html>"),
@@ -430,7 +441,10 @@ test("is idempotent", () => {
 });
 
 test("uses the app name in the injected title tag", () => {
-  const out = injectGrokPwaHead("<html><head></head></html>", { appName: "Wild Race" });
+  const out = injectGrokPwaHead("<html><head></head></html>", {
+    appName: "Wild Race",
+    site: {},
+  });
   assert.match(out, /apple-mobile-web-app-title" content="Wild Race"/);
 });
 
@@ -484,14 +498,16 @@ test("strips install params from the app link", () => {
 });
 
 test("names the install page from host slug", () => {
-  assert.equal(appNameFromHost("localhost:8080"), "Grok App");
-  assert.equal(appNameFromHost("172.17.154.217:8080"), "Grok App");
+  assert.equal(appNameFromHost("localhost:8080"), "에그런");
+  assert.equal(appNameFromHost("172.17.154.217:8080"), "에그런");
+  assert.equal(appNameFromHost("eggrun.vercel.app"), "에그런");
+  assert.equal(appNameFromHost("eggrun.vercel.app:443"), "에그런");
   assert.equal(appNameFromHost("wild-race.grok.me"), "Wild Race");
 });
 
 test("rejects hosts that are not plain slugs", () => {
-  assert.equal(appNameFromHost("<script>alert(1)</script>"), "Grok App");
-  assert.equal(appNameFromHost('"><img src=x onerror=1>.grok.me'), "Grok App");
+  assert.equal(appNameFromHost("<script>alert(1)</script>"), "에그런");
+  assert.equal(appNameFromHost('"><img src=x onerror=1>.grok.me'), "에그런");
 });
 
 test("renders install page markup", () => {
@@ -513,6 +529,53 @@ test("renders the manifest with the per-app name", () => {
   assert.equal(manifest.name, "Wild Race");
   assert.equal(manifest.short_name, "Wild Race");
   assert.equal(manifest.icons[0].src, "/__grok/icon-180.png");
+});
+
+test("renders the eggrun manifest with 에그런 on the vercel host", () => {
+  const manifest = JSON.parse(renderWebManifest("eggrun.vercel.app"));
+  assert.equal(manifest.name, "에그런");
+  assert.equal(manifest.short_name, "에그런");
+  assert.deepEqual(
+    manifest.icons.map((icon) => [icon.src, icon.sizes, icon.type, icon.purpose]),
+    [
+      ["/__grok/icon-180.png", "180x180", "image/png", "any"],
+      ["/__grok/icon-192.png", "192x192", "image/png", "any"],
+      ["/__grok/icon-512.png", "512x512", "image/png", "any"],
+    ],
+  );
+});
+
+test("install page and head title use 에그런 on the vercel host", () => {
+  const html = renderInstallPage("eggrun.vercel.app", "/?install=1&platform=ios");
+  assert.match(html, /Add 에그런 to your/);
+  assert.match(html, /apple-mobile-web-app-title" content="에그런"/);
+  const head = injectGrokPwaHead("<html><head><title>에그런</title></head></html>", {
+    host: "eggrun.vercel.app",
+    cwd: TEMPLATE_ROOT,
+  });
+  assert.match(head, /apple-mobile-web-app-title" content="에그런"/);
+  assert.match(head, /property="og:title" content="에그런"/);
+});
+
+/** Width/height straight out of the PNG IHDR chunk. */
+function pngSize(path) {
+  const buf = readFileSync(path);
+  assert.equal(buf.subarray(1, 4).toString("latin1"), "PNG");
+  return [buf.readUInt32BE(16), buf.readUInt32BE(20)];
+}
+
+test("ships the 180/192/512 PNG icons at the manifest paths", () => {
+  const expected = [
+    ["public/__grok/icon-180.png", [180, 180]],
+    ["public/__grok/icon-192.png", [192, 192]],
+    ["public/__grok/icon-512.png", [512, 512]],
+  ];
+  for (const [rel, size] of expected) {
+    assert.deepEqual(pngSize(join(TEMPLATE_ROOT, rel)), size, rel);
+  }
+  for (const { src } of JSON.parse(renderWebManifest("eggrun.vercel.app")).icons) {
+    readFileSync(join(TEMPLATE_ROOT, "public", src));
+  }
 });
 
 // Tripwires: the deployed-app path only works if Nitro scans server/ — an
