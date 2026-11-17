@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { listRanks, submitRank, type BoardRow } from "@/game/board";
 import { loadLastName, recordRank, shareScore } from "@/game/ranks";
+import { trackEvent } from "@/lib/analytics";
 import { ArrowDown, ArrowUp, Pause, RotateCcw, Trophy, Volume2, VolumeX, Zap } from "lucide-react";
 import { Runner, type DeathReason, type Mode, type Pace, type Snapshot } from "@/game/engine";
 
@@ -408,10 +409,12 @@ export function RunnerGame() {
                   .then((rows) => {
                     setRanks(rows);
                     setShareNote("전체 순위에 남겼습니다");
+                    trackEvent("score_submit", { score: Math.floor(hud.score), success: true });
                   })
                   .catch((err: unknown) => {
                     const message = err instanceof Error ? err.message : "";
                     setShareNote(message || "서버에 연결되지 않아 이 기기에만 남겼습니다");
+                    trackEvent("score_submit", { score: Math.floor(hud.score), success: false });
                   });
               }}
             >
@@ -445,6 +448,11 @@ export function RunnerGame() {
               onClick={() => {
                 void shareScore(runnerName, hud.score).then((result) => {
                   setShareNote(result === "copied" ? "링크를 복사했습니다" : result === "shared" ? "카톡 공유를 열었습니다" : "");
+                  trackEvent("share", {
+                    method: "kakao",
+                    result,
+                    score: Math.floor(hud.score),
+                  });
                 });
               }}
             >

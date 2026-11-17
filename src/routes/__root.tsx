@@ -4,6 +4,13 @@ import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "에그런";
+const GA_MEASUREMENT_ID = "G-WN041JZ7Y4";
+
+/** Standard gtag.js bootstrap, same shape as Fununcle/index.html. */
+const GA_BOOTSTRAP = `window.dataLayer = window.dataLayer || [];
+function gtag() { dataLayer.push(arguments); }
+gtag('js', new Date());
+gtag('config', '${GA_MEASUREMENT_ID}');`;
 
 export const Route = createRootRoute({
   head: () => ({
@@ -31,6 +38,10 @@ export const Route = createRootRoute({
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap",
       },
+    ],
+    scripts: [
+      { src: `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`, async: true },
+      { children: GA_BOOTSTRAP },
     ],
   }),
   component: () => (

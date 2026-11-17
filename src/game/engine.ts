@@ -1,5 +1,6 @@
 import { loadSave, writeSave, type Pace, type SaveData } from "@/game/save";
 import { resumeAudio, setMuted, sfx, unlockAudio } from "@/game/audio";
+import { trackEvent } from "@/lib/analytics";
 
 export type { Pace };
 
@@ -416,6 +417,7 @@ export class Runner {
     for (const f of this.floaters) f.alive = false;
     this.lastKind = "";
     this.nextX = this.scroll + this.view.w * 0.98;
+    trackEvent("game_start", { pace: this.pace });
     this.emit();
   }
 
@@ -877,6 +879,14 @@ export class Runner {
     this.newBest = Math.floor(this.score) > this.bestAtStart && this.score > 0;
     this.dirty = true;
     this.persist(true);
+    trackEvent("game_over", {
+      score: Math.floor(this.score),
+      distance: Math.floor(this.distance),
+      peak_combo: this.peakCombo,
+      reason: this.reason || "none",
+      pace: this.pace,
+      new_best: this.newBest,
+    });
   }
 
   private scorePasses(): void {
